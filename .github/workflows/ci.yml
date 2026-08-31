@@ -39,4 +39,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose build
-      - run: docker compose run --rm runner npm run test:matrix
+      - run: mkdir -p artifacts
+      - run: GYM_UID=$(id -u) GYM_GID=$(id -g) docker compose run --rm runner npm run test:matrix
