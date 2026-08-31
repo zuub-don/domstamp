@@ -1,0 +1,55 @@
+name: domstamp-gym
+
+services:
+  origin-a:
+    build:
+      context: .
+      target: gym
+    environment:
+      PORT: "4173"
+      ORIGIN_NAME: origin-a
+      PEER_ORIGIN: http://origin-b:4174
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4173/healthz').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks: [gym]
+
+  origin-b:
+    build:
+      context: .
+      target: gym
+    environment:
+      PORT: "4174"
+      ORIGIN_NAME: origin-b
+      PEER_ORIGIN: http://origin-a:4173
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4174/healthz').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks: [gym]
+
+  runner:
+    build:
+      context: .
+      target: runner
+    init: true
+    ipc: host
+    user: "${GYM_UID:-1000}:${GYM_GID:-1000}"
+    depends_on:
+      origin-a:
+        condition: service_healthy
+      origin-b:
+        condition: service_healthy
+    environment:
+      CI: "1"
+      GYM_BASE_URL: http://origin-a:4173
+      GYM_PEER_URL: http://origin-b:4174
+    volumes:
+      - ./artifacts:/work/artifacts
+    networks: [gym]
+
+networks:
+  gym: {}

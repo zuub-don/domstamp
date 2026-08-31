@@ -1,0 +1,53 @@
+{
+  "name": "domstamp-gym",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
+  "description": "Framework-neutral, lossless browser-state snapshots for automation and AI agents.",
+  "homepage": "https://zuub-don.github.io/domstamp/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuub-don/domstamp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zuub-don/domstamp/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "gym": "node gym/server.mjs",
+    "docs:dev": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro --root site dev",
+    "docs:build": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro --root site build",
+    "docs:check": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro check --root site --tsconfig tsconfig.json",
+    "docs:preview": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro --root site preview",
+    "build": "tsc -b packages/domstamp packages/tq1 packages/playwright",
+    "clean": "tsc -b packages/domstamp packages/tq1 packages/playwright --clean",
+    "publint": "publint run packages/domstamp --strict --pack=false && publint run packages/tq1 --strict --pack=false && publint run packages/playwright --strict --pack=false",
+    "attw": "attw --pack packages/domstamp --profile esm-only && attw --pack packages/tq1 --profile esm-only && attw --pack packages/playwright --profile esm-only",
+    "verify": "npm run typecheck && npm run build && npm run docs:check && npm run docs:build && npm run publint && npm run attw",
+    "test": "playwright test",
+    "test:conformance": "playwright test --grep @conformance",
+    "test:chaos": "playwright test --grep @chaos",
+    "test:chromium": "playwright test --project=chromium",
+    "test:matrix": "playwright test --project=chromium --project=firefox --project=webkit",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/starlight": "^0.41.10",
+    "@fontsource-variable/ibm-plex-sans": "^5.3.0",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@playwright/test": "1.62.0",
+    "@types/node": "24.3.0",
+    "astro": "^7.2.10",
+    "cross-env": "^10.1.0",
+    "publint": "^0.3.24",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "domstamp",
+  "version": "0.1.0",
+  "description": "Framework-neutral, lossless browser-state snapshot orchestration for automation and AI agents.",
+  "keywords": [
+    "browser-automation",
+    "dom-snapshot",
+    "ai-agents",
+    "typescript",
+    "framework-agnostic",
+    "testing"
+  ],
+  "author": "Domstamp contributors",
+  "homepage": "https://zuub-don.github.io/domstamp/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuub-don/domstamp.git",
+    "directory": "packages/domstamp"
+  },
+  "bugs": {
+    "url": "https://github.com/zuub-don/domstamp/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

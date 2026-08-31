@@ -1,0 +1,23 @@
+{
+  "name": "@domstamp/tq1",
+  "version": "0.1.0",
+  "description": "Lossless dictionary and gzip encoding for Domstamp snapshots.",
+  "keywords": ["lossless-compression", "gzip", "serialization", "dom-snapshot", "typescript"],
+  "author": "Domstamp contributors",
+  "homepage": "https://zuub-don.github.io/domstamp/reference/tq1/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuub-don/domstamp.git",
+    "directory": "packages/tq1"
+  },
+  "bugs": { "url": "https://github.com/zuub-don/domstamp/issues" },
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": { "node": ">=20" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "types": "./dist/index.d.ts",
+  "scripts": { "build": "tsc -b", "prepack": "npm run build" },
+  "publishConfig": { "access": "public", "provenance": true }
+}

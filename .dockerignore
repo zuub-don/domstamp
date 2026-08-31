@@ -1,0 +1,11 @@
+.git
+.agents
+.codex
+.smesh-mcp
+node_modules
+artifacts
+playwright-report
+test-results
+packages/*/dist
+packages/*/*.tsbuildinfo
+*.log

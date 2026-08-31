@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-31T21:22:00Z",
+  "title": "Design System: Domstamp Documentation",
+  "extensions": {
+    "colorMeta": {
+      "evidence-teal": {
+        "role": "primary",
+        "displayName": "Evidence Teal",
+        "canonical": "#0c7167",
+        "tonalRamp": ["#04221f", "#063832", "#084e48", "#0a645b", "#0c7167", "#4b9c93", "#98cbc4", "#e1f2ef"]
+      },
+      "evidence-teal-deep": {
+        "role": "primary",
+        "displayName": "Deep Evidence Teal",
+        "canonical": "#07564f",
+        "tonalRamp": ["#031d1a", "#052f2b", "#06413c", "#07564f", "#24756e", "#609e98", "#a0cec9", "#e2f2f0"]
+      },
+      "evidence-teal-soft": {
+        "role": "primary",
+        "displayName": "Soft Evidence Teal",
+        "canonical": "#d8ece6",
+        "tonalRamp": ["#17302c", "#284a44", "#456860", "#66877e", "#8eaaa2", "#b1cbc4", "#d8ece6", "#edf8f5"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Ledger Paper",
+        "canonical": "#f6f3e9",
+        "tonalRamp": ["#282720", "#444238", "#605e52", "#7f7c6f", "#a19e90", "#c5c1b4", "#e5e1d5", "#f6f3e9"]
+      },
+      "paper-deep": {
+        "role": "neutral",
+        "displayName": "Deep Ledger Paper",
+        "canonical": "#ebe7d9",
+        "tonalRamp": ["#26251f", "#403e35", "#5c594e", "#79766a", "#9b9789", "#beb9aa", "#dcd7c9", "#ebe7d9"]
+      },
+      "mineral-ink": {
+        "role": "neutral",
+        "displayName": "Mineral Ink",
+        "canonical": "#182825",
+        "tonalRamp": ["#0c1513", "#182825", "#30413d", "#4e615c", "#72847e", "#9aa9a4", "#c6d0cc", "#edf2f0"]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#56635f",
+        "tonalRamp": ["#18201e", "#2b3734", "#414e4a", "#56635f", "#78847f", "#9da7a3", "#c8cfcc", "#eff2f1"]
+      },
+      "ledger-rule": {
+        "role": "neutral",
+        "displayName": "Ledger Rule",
+        "canonical": "#c9c9bc",
+        "tonalRamp": ["#24241f", "#3d3d35", "#58584f", "#74746a", "#939389", "#b1b1a5", "#c9c9bc", "#efefe9"]
+      },
+      "exception-rust": {
+        "role": "secondary",
+        "displayName": "Exception Rust",
+        "canonical": "#a84d2b",
+        "tonalRamp": ["#2b130b", "#4b2112", "#6c301a", "#8d4024", "#a84d2b", "#c87858", "#e0ad97", "#f5e5dd"]
+      },
+      "exception-rust-soft": {
+        "role": "secondary",
+        "displayName": "Soft Exception Rust",
+        "canonical": "#f3dfd3",
+        "tonalRamp": ["#33221a", "#533a2e", "#755447", "#987063", "#bc9484", "#d9b9aa", "#f3dfd3", "#fbf0ea"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Ledger Display", "purpose": "Compact page titles only." },
+      "headline": { "displayName": "Editorial Headline", "purpose": "Section and ledger-group hierarchy." },
+      "body": { "displayName": "Documentation Body", "purpose": "Long-form technical reading." },
+      "label": { "displayName": "Evidence Label", "purpose": "Status, timing, schema, version, and table metadata." }
+    },
+    "shadows": [
+      { "name": "ledger-frame", "value": "0 10px 30px rgba(29, 48, 44, 0.08)", "purpose": "Low ambient separation for framed code." },
+      { "name": "header-veil", "value": "0 6px 22px rgba(24, 40, 37, 0.04)", "purpose": "Subtle orientation beneath the persistent header." },
+      { "name": "dark-ledger-frame", "value": "0 14px 36px rgba(0, 0, 0, 0.26)", "purpose": "Equivalent framed-code separation in dark mode." }
+    ],
+    "motion": [
+      { "name": "pipeline-reveal", "value": "700ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "One-time reveal of the pipeline's evidence rule when reduced motion is not requested." }
+    ],
+    "breakpoints": [
+      { "name": "records-stack", "value": "44rem" },
+      { "name": "single-column", "value": "28rem" },
+      { "name": "compact-title", "value": "24rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "primary-action",
+      "description": "The single high-emphasis route into the capture guide.",
+      "html": "<a class=\"ds-primary-action\" href=\"#\">Start capturing <span aria-hidden=\"true\">→</span></a>",
+      "css": ".ds-primary-action { display: inline-block; background: var(--ledger-ink, #182825); border: 1px solid var(--ledger-ink, #182825); border-radius: .35rem; color: var(--ledger-paper, #f6f3e9); font: 620 1rem/1.4 'IBM Plex Sans', sans-serif; padding: .65rem .9rem; text-decoration: none; } .ds-primary-action:hover { background: var(--ledger-teal-dark, #07564f); border-color: var(--ledger-teal-dark, #07564f); } .ds-primary-action:focus-visible { outline: 3px solid var(--ledger-teal, #0c7167); outline-offset: 3px; }"
+    },
+    {
+      "name": "Release Strip",
+      "kind": "custom",
+      "description": "A compact ruled record of release, schema, and matrix state.",
+      "html": "<div class=\"ds-release-strip\"><span><strong>0.1.0</strong> preview</span><span><strong>Schema</strong> 1</span><span><strong>Matrix</strong> 84 passing</span></div>",
+      "css": ".ds-release-strip { border-block: 1px solid var(--ledger-rule, #c9c9bc); color: var(--ledger-muted, #56635f); display: flex; flex-wrap: wrap; font: .7rem/1.45 'IBM Plex Mono', monospace; letter-spacing: .045em; text-transform: uppercase; } .ds-release-strip span { padding: .55rem 1rem .55rem 0; } .ds-release-strip span + span { border-inline-start: 1px solid var(--ledger-rule, #c9c9bc); padding-inline-start: 1rem; } .ds-release-strip strong { color: var(--ledger-ink, #182825); font-weight: 600; }"
+    },
+    {
+      "name": "Capture Pipeline",
+      "kind": "custom",
+      "description": "The four accountable stages from target to snapshot.",
+      "html": "<ol class=\"ds-pipeline\"><li><b>Target</b><span>Page or driver session</span></li><li><b>Adapter</b><span>Accessible browser state</span></li><li><b>Core</b><span>Validate, retry, transform</span></li><li><b>Snapshot</b><span>Schema 1 or TQ1</span></li></ol>",
+      "css": ".ds-pipeline { border-block: 1px solid var(--ledger-rule, #c9c9bc); display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; margin: 0; padding: 0; position: relative; } .ds-pipeline::before { background: var(--ledger-teal, #0c7167); content: ''; height: 2px; inset: -1px 0 auto; position: absolute; } .ds-pipeline li { padding: 1rem .75rem 1.15rem; } .ds-pipeline li + li { border-inline-start: 1px solid var(--ledger-rule, #c9c9bc); } .ds-pipeline b, .ds-pipeline span { display: block; } .ds-pipeline b { font: 600 .72rem/1.4 'IBM Plex Mono', monospace; letter-spacing: .06em; text-transform: uppercase; } .ds-pipeline span { color: var(--ledger-muted, #56635f); font: .78rem/1.35 'IBM Plex Sans', sans-serif; margin-top: .38rem; }"
+    },
+    {
+      "name": "Supported Status",
+      "kind": "chip",
+      "refersTo": "status-supported",
+      "description": "A textual support state reinforced by a filled square.",
+      "html": "<span class=\"ds-status-supported\">Supported</span>",
+      "css": ".ds-status-supported { align-items: center; color: var(--ledger-teal-dark, #07564f); display: inline-flex; font: 600 .75rem/1.45 'IBM Plex Mono', monospace; gap: .45rem; letter-spacing: .05em; text-transform: uppercase; } .ds-status-supported::before { background: var(--ledger-teal, #0c7167); content: ''; height: .5rem; width: .5rem; }"
+    },
+    {
+      "name": "Unavailable Status",
+      "kind": "chip",
+      "refersTo": "status-unavailable",
+      "description": "An unavailable state reinforced by a hollow square.",
+      "html": "<span class=\"ds-status-unavailable\">Unavailable</span>",
+      "css": ".ds-status-unavailable { align-items: center; color: var(--ledger-rust, #a84d2b); display: inline-flex; font: 600 .75rem/1.45 'IBM Plex Mono', monospace; gap: .45rem; letter-spacing: .05em; text-transform: uppercase; } .ds-status-unavailable::before { border: 1px solid currentColor; box-sizing: border-box; content: ''; height: .5rem; width: .5rem; }"
+    },
+    {
+      "name": "Active Navigation",
+      "kind": "nav",
+      "description": "The current page uses text weight and a leading evidence square instead of a pill.",
+      "html": "<nav class=\"ds-nav\"><a aria-current=\"page\" href=\"#\">Getting started</a></nav>",
+      "css": ".ds-nav a { color: var(--ledger-ink, #182825); display: inline-block; font: .88rem/1.5 'IBM Plex Sans', sans-serif; padding: .4rem .5rem; position: relative; text-decoration: none; } .ds-nav a[aria-current='page'] { color: var(--ledger-teal-dark, #07564f); font-weight: 650; } .ds-nav a[aria-current='page']::before { background: var(--ledger-teal, #0c7167); content: ''; height: .45rem; inset-inline-start: -.7rem; position: absolute; top: .7rem; width: .45rem; } .ds-nav a:focus-visible { outline: 3px solid var(--ledger-teal, #0c7167); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Capture Ledger",
+    "overview": "Domstamp's documentation behaves like an exact technical field ledger: calm, compact, and accountable. Warm paper surfaces make long reading comfortable; mineral ink and fine rules establish hierarchy; scarce evidence teal marks navigation, support, and action. The system favors searchable knowledge, explicit capability boundaries, and information density over promotional composition.",
+    "keyCharacteristics": [
+      "Warm paper and mineral-ink materiality in light mode, with a purpose-built dark theme.",
+      "Editorial serif headings paired with highly legible sans-serif prose and monospaced evidence labels.",
+      "Thin rules, tabular structures, and small square status marks in place of decorative containers.",
+      "Evidence teal is reserved for action, focus, active navigation, and confirmed support.",
+      "Motion is rare, brief, and disabled when reduced motion is requested."
+    ],
+    "rules": [
+      { "name": "The Evidence Accent Rule", "body": "Teal identifies interaction or verified support; it is not a decorative wash.", "section": "colors" },
+      { "name": "The Honest Exception Rule", "body": "Rust communicates a real unavailable boundary, never ordinary emphasis.", "section": "colors" },
+      { "name": "The Three-Voice Rule", "body": "Serif explains hierarchy, sans serif carries knowledge, and mono records evidence; do not exchange their roles casually.", "section": "typography" },
+      { "name": "The Legibility Floor Rule", "body": "Responsive metadata does not fall below the implemented 0.75rem label size and 1.45 line height.", "section": "typography" },
+      { "name": "The Lossless Responsive Rule", "body": "A smaller viewport may transform structure, but it must not remove package fields, capability boundaries, or status meaning.", "section": "layout" },
+      { "name": "The Flat Ledger Rule", "body": "Structure comes from rules and tonal surfaces first; shadow is functional separation, not ornament.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do make availability, schema, version, and test status explicit.",
+      "Do use one-pixel rules and tonal surfaces to establish information structure.",
+      "Do preserve visible focus, semantic labels, reduced-motion behavior, and mobile information completeness.",
+      "Do keep introductory copy compact enough that documentation begins above the fold."
+    ],
+    "donts": [
+      "Don't add an oversized hero, ornamental gradient, or promotional illustration to the documentation home.",
+      "Don't use teal as a general background decoration or rust for ordinary emphasis.",
+      "Don't turn navigation items, capability rows, or route lists into a field of floating rounded cards.",
+      "Don't reduce metadata below its responsive legibility floor or solve narrow layouts by clipping content."
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+artifacts/
+playwright-report/
+test-results/
+*.log
+packages/*/dist/
+packages/*/*.tsbuildinfo
+.astro/
+site/dist/
+.impeccable/review/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store

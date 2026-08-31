@@ -1,0 +1,44 @@
+---
+title: Domstamp
+description: Framework-neutral browser-state snapshots for automation and AI agents.
+pagefind: true
+---
+
+import HomeLedger from '../../components/HomeLedger.astro';
+
+<HomeLedger />
+
+## The contract in one sentence
+
+Domstamp asks a typed adapter to capture accessible browser state, validates the resulting graph, applies bounded orchestration, and returns a driver-independent snapshot.
+
+It is intentionally split into three packages:
+
+<div class="package-table" role="region" aria-label="Domstamp package responsibilities" tabindex="0">
+  <table>
+    <thead>
+      <tr><th>Package</th><th>Owns</th><th>Runtime dependencies</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td data-label="Package"><code>domstamp</code></td>
+        <td data-label="Owns">Schema, configuration, orchestration, validation, plugins</td>
+        <td data-label="Runtime dependencies">None</td>
+      </tr>
+      <tr>
+        <td data-label="Package"><code>@domstamp/playwright</code></td>
+        <td data-label="Owns">Playwright <code>Page</code> adapter and iterative browser walker</td>
+        <td data-label="Runtime dependencies"><code>playwright-core</code> peer</td>
+      </tr>
+      <tr>
+        <td data-label="Package"><code>@domstamp/tq1</code></td>
+        <td data-label="Owns">Dictionary encoding and bounded gzip transport</td>
+        <td data-label="Runtime dependencies">Node standard library</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+:::caution[Preview contract]
+Version `0.1.0` is suitable for evaluation, but the schema compatibility window is not frozen for 1.0. Read [Release status](/operations/release-status/) before treating stored snapshots as a permanent interchange format.
+:::

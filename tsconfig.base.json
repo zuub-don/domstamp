@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "domstamp": ["packages/domstamp/src/index.ts"],
+      "@domstamp/tq1": ["packages/tq1/src/index.ts"],
+      "@domstamp/playwright": ["packages/playwright/src/index.ts"]
+    }
+  }
+}

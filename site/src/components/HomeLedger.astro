@@ -1,0 +1,59 @@
+<div class="ledger-home">
+  <div class="release-strip" aria-label="Current project status">
+    <span><strong>0.1.0</strong> preview</span>
+    <span><strong>Schema</strong> 1</span>
+    <span><strong>Matrix</strong> 84 passing</span>
+  </div>
+
+  <p class="ledger-lead">Capture the browser state an automation agent can perceive—DOM, frames, interaction, geometry, and consistency—in one bounded, validated snapshot.</p>
+
+  <div class="ledger-actions">
+    <a class="primary-action" href="./guides/getting-started/">Start capturing <span aria-hidden="true">→</span></a>
+    <a href="./reference/snapshot-schema/">Inspect the schema</a>
+  </div>
+
+  <section class="pipeline-section" aria-labelledby="pipeline-heading">
+    <div class="section-heading">
+      <h2 id="pipeline-heading">One capture, four accountable stages</h2>
+      <p>Every stage is typed, bounded, and independently replaceable.</p>
+    </div>
+    <ol class="capture-pipeline">
+      <li><b>Target</b><span>Page or driver session</span></li>
+      <li><b>Adapter</b><span>Accessible browser state</span></li>
+      <li><b>Core</b><span>Validate, retry, transform</span></li>
+      <li><b>Snapshot</b><span>Schema 1 or TQ1</span></li>
+    </ol>
+  </section>
+
+  <div class="ledger-routes">
+    <section aria-labelledby="first-capture-heading">
+      <h2 id="first-capture-heading">Make the first capture</h2>
+      <ul>
+        <li><a href="./guides/getting-started/">Install the core and Playwright adapter</a><span>5 min</span></li>
+        <li><a href="./guides/capture-scopes/">Choose document, viewport, or focus</a><span>Guide</span></li>
+        <li><a href="./guides/frames-and-shadow-dom/">Capture frames and open Shadow DOM</a><span>Guide</span></li>
+      </ul>
+    </section>
+    <section aria-labelledby="build-heading">
+      <h2 id="build-heading">Build on the contract</h2>
+      <ul>
+        <li><a href="./extend/adapters/">Author a driver adapter</a><span>Extension</span></li>
+        <li><a href="./extend/plugins/">Transform snapshots with plugins</a><span>Extension</span></li>
+        <li><a href="./operations/gym/">Validate against the browser gym</a><span>Operate</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="capability-ledger" aria-labelledby="capabilities-heading">
+    <div class="section-heading">
+      <h2 id="capabilities-heading">Playwright capability ledger</h2>
+      <p>Boundaries are declared before capture, never hidden afterward.</p>
+    </div>
+    <div class="capability-rows">
+      <div><span class="status-mark supported">Supported</span><b>DOM · open Shadow DOM · templates</b></div>
+      <div><span class="status-mark supported">Supported</span><b>Same- and cross-origin frames</b></div>
+      <div><span class="status-mark unavailable">Unavailable</span><b>Closed Shadow DOM · native accessibility tree</b></div>
+      <div><span class="status-mark unavailable">Unavailable</span><b>Pixels · built-in redaction</b></div>
+    </div>
+  </section>
+</div>
