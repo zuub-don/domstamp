@@ -27,7 +27,7 @@ await page.goto('https://example.com');
 const domstamp = createDomstamp(playwrightAdapter());
 const snapshot = await domstamp.capture(page);
 
-console.log(snapshot.schemaVersion); // 2
+console.log(snapshot.schemaVersion); // 3
 console.log(snapshot.documents.length);
 
 await browser.close();

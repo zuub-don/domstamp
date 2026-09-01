@@ -22,7 +22,7 @@ It is intentionally split into four packages:
     <tbody>
       <tr>
         <td data-label="Package"><code>domstamp</code></td>
-        <td data-label="Owns">Schema, configuration, orchestration, validation, plugins</td>
+        <td data-label="Owns">Schema, configuration, orchestration, evidence providers, validation, plugins</td>
         <td data-label="Runtime dependencies">None</td>
       </tr>
       <tr>
@@ -45,5 +45,5 @@ It is intentionally split into four packages:
 </div>
 
 :::caution[Preview contract]
-Version `0.2.0` is suitable for evaluation. Schema 2 can explicitly migrate stored schema-1 snapshots, but the long-term 1.0 compatibility window is not frozen. Read [Release status](/operations/release-status/) before treating preview snapshots as a permanent interchange format.
+Version `0.3.0` is suitable for evaluation. Schema 3 records evidence provenance and explicitly migrates stored schema-1 and schema-2 snapshots. During `0.x`, readers retain at least the two preceding schemas; schemas accepted at `1.0` remain readable throughout `1.x`. Read [Release status](/operations/release-status/) before treating a preview API as stable.
 :::

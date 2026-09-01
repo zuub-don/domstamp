@@ -25,7 +25,7 @@ const snapshot = await domstamp.capture(page, {
 });
 ```
 
-The core validates raw adapter output, applies structural redaction, validates the result again, and only then runs consumer transforms. Node IDs and resolved reference targets remain stable.
+The core validates raw adapter output, collects and validates configured evidence provenance, applies structural redaction, validates the result again, and only then runs consumer transforms. Node IDs and resolved reference targets remain stable. String-valued evidence details participate in configured literal redaction.
 
 Pixel masks are applied by the driver during screenshot capture. If pixels and redaction are both enabled, an empty mask list is rejected as `INVALID_CONFIG`.
 

@@ -39,6 +39,7 @@ export default defineConfig({
           { label: 'Install and capture', slug: 'guides/getting-started' },
           { label: 'Choose a capture scope', slug: 'guides/capture-scopes' },
           { label: 'Frames and Shadow DOM', slug: 'guides/frames-and-shadow-dom' },
+          { label: 'Capture closed Shadow DOM', slug: 'guides/closed-shadow-dom' },
           { label: 'Handle unstable pages', slug: 'guides/consistency' },
           { label: 'Redact sensitive captures', slug: 'guides/redaction' }
         ] },
@@ -59,7 +60,8 @@ export default defineConfig({
           { label: 'Security and privacy', slug: 'operations/security' },
           { label: 'Conformance gym', slug: 'operations/gym' },
           { label: 'Chaos laboratory', slug: 'operations/chaos' },
-          { label: 'Release status', slug: 'operations/release-status' }
+          { label: 'Release status', slug: 'operations/release-status' },
+          { label: 'Release procedure', slug: 'operations/releasing' }
         ] }
       ]
     })

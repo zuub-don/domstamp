@@ -1,4 +1,12 @@
-import type { AdapterCapability, CaptureResult, DomstampAdapter, DomstampPlugin, PluginContext } from './adapter.js';
+import type {
+  AdapterCapability,
+  CaptureResult,
+  DomstampAdapter,
+  DomstampEvidenceProvider,
+  DomstampPlugin,
+  EvidenceProviderContext,
+  PluginContext
+} from './adapter.js';
 import { DEFAULT_CAPTURE_CONFIG, type CaptureConfig, type CaptureOverrides, type CaptureSettings } from './config.js';
 import { DomstampError } from './errors.js';
 import { redactSnapshot } from './redaction.js';
@@ -7,6 +15,7 @@ import { SNAPSHOT_FORMAT, SNAPSHOT_SCHEMA_VERSION, type DomSnapshot } from './sc
 export interface DomstampOptions<TTarget, TAdapterOptions = unknown> {
   readonly defaults?: CaptureSettings<TAdapterOptions>;
   readonly plugins?: readonly DomstampPlugin<TTarget, TAdapterOptions>[];
+  readonly evidenceProviders?: readonly DomstampEvidenceProvider<TTarget, TAdapterOptions>[];
   readonly now?: () => number;
 }
 
@@ -200,6 +209,7 @@ export function validateSnapshot(
   if (typeof snapshot.framesTruncated !== 'boolean') invalidSnapshot('framesTruncated must be a boolean');
   if (!Array.isArray(snapshot.accessibility)) invalidSnapshot('accessibility must be an array');
   if (!Array.isArray(snapshot.attachments)) invalidSnapshot('attachments must be an array');
+  if (!Array.isArray(snapshot.evidence)) invalidSnapshot('evidence must be an array');
   if (snapshot.viewport !== null && (!isRecord(snapshot.viewport)
     || !isFiniteNumber(snapshot.viewport.width) || snapshot.viewport.width < 0
     || !isFiniteNumber(snapshot.viewport.height) || snapshot.viewport.height < 0)) {
@@ -385,6 +395,25 @@ export function validateSnapshot(
     if (decodedLength !== attachment.byteLength) invalidSnapshot(`Attachment ${attachment.id} byteLength does not match its data`);
     attachmentIds.add(attachment.id);
   }
+  const evidenceIds = new Set<string>();
+  for (const evidence of snapshot.evidence) {
+    if (!isRecord(evidence)
+      || typeof evidence.id !== 'string' || !evidence.id || evidenceIds.has(evidence.id)
+      || typeof evidence.kind !== 'string' || !evidence.kind
+      || (evidence.frameId !== null && (typeof evidence.frameId !== 'string' || !frameIds.has(evidence.frameId)))
+      || typeof evidence.provider !== 'string' || !evidence.provider
+      || typeof evidence.providerVersion !== 'string' || !evidence.providerVersion
+      || typeof evidence.source !== 'string' || !evidence.source
+      || !['complete', 'partial', 'instrumented', 'unavailable'].includes(String(evidence.completeness))
+      || !['standard', 'instrumented', 'browser', 'system'].includes(String(evidence.privilege))
+      || !['normal', 'sensitive', 'highly-sensitive'].includes(String(evidence.sensitivity))
+      || !isRecord(evidence.details)
+      || !Object.values(evidence.details).every((value) => value === null || typeof value === 'boolean'
+        || typeof value === 'string' || isFiniteNumber(value))) {
+      invalidSnapshot('Snapshot contains invalid evidence provenance');
+    }
+    evidenceIds.add(evidence.id);
+  }
   validateParentGraph(frameParents, 'Frame');
 }
 
@@ -439,12 +468,23 @@ export function createDomstamp<TTarget, TAdapterOptions = unknown>(
   );
   const defaults = resolveConfig(adapterDefaults, options.defaults);
   const plugins = [...(options.plugins ?? [])];
+  const evidenceProviders = [...(options.evidenceProviders ?? [])];
   const pluginNames = new Set<string>();
   for (const plugin of plugins) {
     if (!plugin.name || pluginNames.has(plugin.name)) {
       throw new DomstampError('INVALID_CONFIG', `Plugin names must be non-empty and unique: ${plugin.name}`);
     }
     pluginNames.add(plugin.name);
+  }
+  const evidenceProviderNames = new Set<string>();
+  for (const provider of evidenceProviders) {
+    if (!provider.name || !provider.version || evidenceProviderNames.has(provider.name)) {
+      throw new DomstampError(
+        'INVALID_CONFIG',
+        `Evidence provider names must be non-empty and unique, with a non-empty version: ${provider.name}`
+      );
+    }
+    evidenceProviderNames.add(provider.name);
   }
   if (!adapter.name || !adapter.version) throw new DomstampError('INVALID_CONFIG', 'Adapter name and version are required');
   const capabilities = new Set(adapter.capabilities);
@@ -520,6 +560,45 @@ export function createDomstamp<TTarget, TAdapterOptions = unknown>(
         await settle(config.consistency.mode === 'verify' ? config.consistency.settleMs : 0, signal);
       }
       if (!snapshot) throw new DomstampError('CAPTURE_FAILED', 'Adapter did not return a snapshot');
+      for (const provider of evidenceProviders) {
+        const providerContext: EvidenceProviderContext<TTarget, TAdapterOptions> = {
+          target,
+          adapter: { name: adapter.name, version: adapter.version },
+          config,
+          signal,
+          snapshot
+        };
+        try {
+          const observations = await withAbort(Promise.resolve(provider.collect(providerContext)), signal);
+          snapshot = {
+            ...snapshot,
+            evidence: [
+              ...snapshot.evidence,
+              ...observations.map((observation) => ({
+                ...observation,
+                provider: provider.name,
+                providerVersion: provider.version,
+                details: observation.details ?? {}
+              }))
+            ]
+          };
+          validateSnapshot(snapshot, snapshotLimits);
+          if (observations.length > 0) {
+            diagnostics.push({
+              level: 'info',
+              code: 'EVIDENCE_COLLECTED',
+              message: `Collected ${observations.length} evidence observation(s) from ${provider.name}`,
+              details: { provider: provider.name, observations: observations.length }
+            });
+          }
+        } catch (error) {
+          if (isInterruption(error)) throw error;
+          throw new DomstampError('EVIDENCE_PROVIDER_FAILED', `Evidence provider ${provider.name} failed`, {
+            cause: error,
+            details: { provider: provider.name }
+          });
+        }
+      }
       const initialBytes = snapshotBytes(snapshot);
       if (initialBytes > config.limits.maxSnapshotBytes) {
         throw new DomstampError('INVALID_SNAPSHOT', 'Snapshot exceeds limits.maxSnapshotBytes', {
@@ -601,6 +680,7 @@ export function createDomstamp<TTarget, TAdapterOptions = unknown>(
     withDefaults: (overrides) => createDomstamp(adapter, {
       defaults: resolveConfig(defaults, overrides),
       plugins,
+      evidenceProviders,
       now
     })
   };

@@ -1,6 +1,7 @@
 import type { AdapterCapability, AdapterContext, DomstampAdapter, DomSnapshot } from 'domstamp';
 import type { Page } from 'playwright-core';
 import { capturePlaywrightSnapshot } from './walker.js';
+import type { ClosedShadowInstrumentation } from './closed-shadow.js';
 
 export interface PlaywrightAdapterOptions {
   /** Override the minimal computed-style property list used by the walker. */
@@ -20,11 +21,20 @@ const capabilities = [
   'redaction'
 ] as const satisfies readonly AdapterCapability[];
 
-export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOptions> {
+export interface PlaywrightAdapterFactoryOptions {
+  readonly closedShadowRoots?: ClosedShadowInstrumentation;
+}
+
+export function playwrightAdapter(
+  options: PlaywrightAdapterFactoryOptions = {}
+): DomstampAdapter<Page, PlaywrightAdapterOptions> {
+  const adapterCapabilities = options.closedShadowRoots
+    ? [...capabilities, 'closed-shadow-roots' as const]
+    : capabilities;
   return Object.freeze({
     name: '@domstamp/playwright',
-    version: '0.2.0',
-    capabilities: new Set(capabilities),
+    version: '0.3.0',
+    capabilities: new Set(adapterCapabilities),
     async capture(page: Page, { config, signal }: AdapterContext<PlaywrightAdapterOptions>): Promise<DomSnapshot> {
       if (signal.aborted) throw signal.reason;
       const root = 'root' in config.scope ? config.scope.root : undefined;
@@ -41,6 +51,9 @@ export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOpti
         maxDepth: config.limits.maxDepth,
         includeComments: config.features.dom.comments,
         includeShadowRoots: config.features.dom.shadowRoots !== 'none',
+        ...(config.features.dom.shadowRoots === 'all-available' && options.closedShadowRoots
+          ? { closedShadowRoots: { registryKey: options.closedShadowRoots.registryKey } }
+          : {}),
         includeTemplates: config.features.dom.templates,
         captureGeometry: layout !== false && layout.geometry,
         captureStyles: layout !== false,
@@ -83,4 +96,6 @@ export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOpti
 }
 
 export { capturePlaywrightSnapshot } from './walker.js';
+export { installClosedShadowInstrumentation } from './closed-shadow.js';
+export type { ClosedShadowInstrumentation } from './closed-shadow.js';
 export type { CaptureOptions as PlaywrightCaptureOptions } from './walker.js';

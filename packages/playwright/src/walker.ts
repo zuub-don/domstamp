@@ -1,4 +1,4 @@
-import type { CaptureMode, DocumentSnapshot, DomSnapshot, SnapshotNode } from 'domstamp';
+import type { CaptureMode, DocumentSnapshot, DomSnapshot, SnapshotEvidence, SnapshotNode } from 'domstamp';
 import type { Frame, Page } from 'playwright-core';
 import { captureAccessibilityTrees } from './accessibility.js';
 import { captureScreenshotAttachment, type PixelCaptureOptions } from './pixels.js';
@@ -12,6 +12,7 @@ export interface CaptureOptions {
   maxDepth?: number;
   includeComments?: boolean;
   includeShadowRoots?: boolean;
+  closedShadowRoots?: Readonly<{ registryKey: string }>;
   includeTemplates?: boolean;
   captureGeometry?: boolean;
   captureStyles?: boolean;
@@ -84,7 +85,7 @@ async function captureDocument(
 
     const captured = await frame.evaluate(({
       rootSelector, captureMode, maxNodes, maxDepth, frameMetadata, includeComments,
-      includeShadowRoots, includeTemplates, captureGeometry, captureStyles, styleProperties, allStyleProperties,
+      includeShadowRoots, closedShadowRegistryKey, includeTemplates, captureGeometry, captureStyles, styleProperties, allStyleProperties,
       captureFocus, captureSelection, captureFormState, captureScroll, captureReferences,
       viewportMargin, focusSiblingCount, focusIncludeReferences
     }): DocumentSnapshot => {
@@ -97,6 +98,18 @@ async function captureDocument(
       const epochStart = mutationState?.epoch ?? null;
       let depthTruncated = false;
       let nodesTruncated = false;
+
+      const shadowRootFor = (element: Element): ShadowRoot | null => {
+        if (element.shadowRoot) return element.shadowRoot;
+        if (!closedShadowRegistryKey) return null;
+        const accessor = (window as typeof window & Record<string, unknown>)[closedShadowRegistryKey];
+        if (typeof accessor !== 'function') return null;
+        try {
+          return (accessor as (host: Element) => ShadowRoot | null)(element);
+        } catch {
+          return null;
+        }
+      };
 
       const selectedRoot = rootSelector ? document.querySelector(rootSelector) : document.documentElement;
       if (!selectedRoot) throw new Error(`Snapshot root not found: ${rootSelector}`);
@@ -117,7 +130,8 @@ async function captureDocument(
           children.push(child);
           return true;
         };
-        if (includeShadowRoots && node instanceof Element && node.shadowRoot && !append(node.shadowRoot)) return children;
+        const shadowRoot = includeShadowRoots && node instanceof Element ? shadowRootFor(node) : null;
+        if (shadowRoot && !append(shadowRoot)) return children;
         if (includeTemplates && node instanceof HTMLTemplateElement && !append(node.content)) return children;
         for (let child = node.firstChild; child; child = child.nextSibling) {
           if (!includeComments && child instanceof Comment) continue;
@@ -128,7 +142,11 @@ async function captureDocument(
 
       const deepActiveElement = (): Element | null => {
         let active: Element | null = document.activeElement;
-        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        let activeRoot = active ? shadowRootFor(active) : null;
+        while (activeRoot?.activeElement) {
+          active = activeRoot.activeElement;
+          activeRoot = shadowRootFor(active);
+        }
         return active;
       };
 
@@ -444,6 +462,7 @@ async function captureDocument(
       maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
       includeComments: options.includeComments ?? true,
       includeShadowRoots: options.includeShadowRoots ?? true,
+      closedShadowRegistryKey: options.closedShadowRoots?.registryKey ?? null,
       includeTemplates: options.includeTemplates ?? true,
       captureGeometry: options.captureGeometry ?? true,
       captureStyles: options.captureStyles ?? true,
@@ -578,15 +597,43 @@ export async function capturePlaywrightSnapshot(page: Page, options: CaptureOpti
         { ...options.pixels, ...(options.signal === undefined ? {} : { signal: options.signal }) }
       )]
     : [];
+  const evidence: SnapshotEvidence[] = options.closedShadowRoots
+    ? await Promise.all(frames.map(async ({ frame, metadata }, index): Promise<SnapshotEvidence> => {
+        let instrumentationAvailable = false;
+        try {
+          instrumentationAvailable = await frame.evaluate((registryKey) => (
+            typeof (window as typeof window & Record<string, unknown>)[registryKey] === 'function'
+          ), options.closedShadowRoots!.registryKey);
+        } catch {
+          // Detached and inaccessible frames retain explicit unavailable provenance.
+        }
+        const capturedRoots = documents[index]?.nodes.filter((node) => (
+          node.kind === 'shadow-root' && node.value === 'closed'
+        )).length ?? 0;
+        return {
+          id: `closed-shadow-dom:${metadata.frameId}`,
+          kind: 'closed-shadow-dom',
+          frameId: metadata.frameId,
+          provider: '@domstamp/playwright',
+          providerVersion: '0.3.0',
+          source: 'preload-instrumentation',
+          completeness: instrumentationAvailable ? 'instrumented' : 'unavailable',
+          privilege: 'instrumented',
+          sensitivity: 'sensitive',
+          details: { instrumentationAvailable, capturedRoots }
+        };
+      }))
+    : [];
 
   return {
     format: 'domstamp',
-    schemaVersion: 2,
+    schemaVersion: 3,
     viewport: pageViewport(page),
     pointer,
     framesTruncated,
     documents,
     accessibility,
-    attachments
+    attachments,
+    evidence
   };
 }

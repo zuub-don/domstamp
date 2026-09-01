@@ -33,8 +33,8 @@ for (const path of ['packages/playwright/src/index.ts', 'packages/puppeteer/src/
 }
 
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
-if (!changelog.includes(`## ${expected} — unreleased`)) {
-  throw new Error(`CHANGELOG.md has no unreleased ${expected} section`);
+if (!changelog.split('\n').some((line) => line.startsWith(`## ${expected} — `))) {
+  throw new Error(`CHANGELOG.md has no ${expected} section`);
 }
 
 console.log(`Version contract is consistent at ${expected}`);

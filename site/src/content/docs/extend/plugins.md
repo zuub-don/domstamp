@@ -18,10 +18,12 @@ interface DomstampPlugin<TTarget, TAdapterOptions = unknown> {
 ## Lifecycle
 
 ```text
-beforeCapture → adapter → validation → structural redaction → transform → validation → afterCapture
+beforeCapture → adapter → validation → evidence providers → validation → structural redaction → transform → validation → afterCapture
 ```
 
 Plugins execute in declaration order. Every transformed snapshot is validated and byte-limited again.
+
+Evidence providers are separate from plugins because they describe capture provenance rather than consumer transformation. They receive validated adapter output, run under the same deadline, and are redacted before plugin transforms can observe the snapshot.
 
 ```ts
 import type { DomstampPlugin } from 'domstamp';

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { createDomstamp } from 'domstamp';
-import { playwrightAdapter } from '@domstamp/playwright';
+import { installClosedShadowInstrumentation, playwrightAdapter } from '@domstamp/playwright';
 import { loadAdapter } from './support/adapter.js';
 import { decodeTq1, encodeTq1 } from './support/tq1.js';
 
@@ -315,6 +315,99 @@ test.describe('@conformance snapshot contract', () => {
     // visible but inaccessible internals are never implied to be captured.
     expect(byId('closed-widget')).toBeDefined();
     expect(snapshot.documents[0]!.nodes.some((node) => node.value === 'inaccessible closed control')).toBe(false);
+  });
+
+  test('instrumented closed roots are iterative, provenance-labeled, and mutation-aware', async ({ context, page }) => {
+    const instrumentation = await installClosedShadowInstrumentation(context);
+    try {
+      await page.goto('/scenario/rendering-boundaries?seed=38');
+      const client = createDomstamp(playwrightAdapter({ closedShadowRoots: instrumentation }), {
+        defaults: { features: { dom: { shadowRoots: 'all-available' } } }
+      });
+      expect(client.adapter.capabilities.has('closed-shadow-roots')).toBe(true);
+      const first = await client.capture(page);
+      const firstDocument = first.documents[0]!;
+
+      expect(firstDocument.nodes.filter((node) => node.kind === 'shadow-root' && node.value === 'closed')).toHaveLength(2);
+      expect(firstDocument.nodes.some((node) => node.value === 'inaccessible closed control')).toBe(true);
+      expect(firstDocument.nodes.some((node) => node.value === 'nested closed value 38')).toBe(true);
+      expect(first.evidence).toContainEqual(expect.objectContaining({
+        id: 'closed-shadow-dom:frame-0',
+        completeness: 'instrumented',
+        privilege: 'instrumented',
+        details: { instrumentationAvailable: true, capturedRoots: 2 }
+      }));
+
+      await page.evaluate(() => (window as typeof window & {
+        __GYM__: { addClosedRoot(): void };
+      }).__GYM__.addClosedRoot());
+      const second = await client.capture(page);
+      expect(second.documents[0]!.nodes.filter((node) => node.kind === 'shadow-root' && node.value === 'closed')).toHaveLength(3);
+      expect(second.documents[0]!.nodes.some((node) => node.state.value === 'dynamic-closed-38')).toBe(true);
+      expect(second.evidence[0]?.details.capturedRoots).toBe(3);
+    } finally {
+      await instrumentation.dispose();
+    }
+  });
+
+  test('closed-root instrumentation reaches cross-origin frame documents', async ({ context, page }) => {
+    const instrumentation = await installClosedShadowInstrumentation(context);
+    try {
+      await page.goto('/scenario/frames?seed=39');
+      await page.locator('#cross-origin').evaluate((frame) => {
+        const target = new URL((frame as HTMLIFrameElement).src);
+        target.pathname = '/scenario/rendering-boundaries';
+        target.search = '?seed=39';
+        (frame as HTMLIFrameElement).src = target.href;
+      });
+      await expect.poll(() => page.frames().some((frame) => frame.url().includes('rendering-boundaries'))).toBe(true);
+
+      const snapshot = await createDomstamp(playwrightAdapter({ closedShadowRoots: instrumentation }), {
+        defaults: { features: { dom: { shadowRoots: 'all-available' } } }
+      }).capture(page);
+      const child = snapshot.documents.find((document) => document.url.includes('rendering-boundaries'));
+      expect(child).toBeDefined();
+      expect(child!.nodes.filter((node) => node.kind === 'shadow-root' && node.value === 'closed')).toHaveLength(2);
+      expect(snapshot.evidence).toContainEqual(expect.objectContaining({
+        frameId: child!.frameId,
+        completeness: 'instrumented',
+        details: { instrumentationAvailable: true, capturedRoots: 2 }
+      }));
+    } finally {
+      await instrumentation.dispose();
+    }
+  });
+
+  test('@chaos closed-root churn remains bounded, deterministic, and graph-valid', async ({ context, page }) => {
+    const instrumentation = await installClosedShadowInstrumentation(context);
+    try {
+      await page.goto('/scenario/rendering-boundaries?seed=40');
+      const client = createDomstamp(playwrightAdapter({ closedShadowRoots: instrumentation }), {
+        defaults: {
+          features: { dom: { shadowRoots: 'all-available' } },
+          limits: { maxNodesPerFrame: 2_000, maxDepth: 256 }
+        }
+      });
+      let dynamicRoots = 0;
+      for (let step = 0; step < 18; step += 1) {
+        const action = step % 3 === 2 ? 'remove' : 'add';
+        dynamicRoots = await page.evaluate((next) => (window as typeof window & {
+          __GYM__: { churnClosedRoots(action: string): number };
+        }).__GYM__.churnClosedRoots(next), action);
+        const snapshot = await client.capture(page);
+        const document = snapshot.documents[0]!;
+        expect(document.consistency.status).toBe('stable');
+        expect(document.truncated).toEqual({ nodes: false, depth: false });
+        expect(document.nodes.filter((node) => node.kind === 'shadow-root' && node.value === 'closed'))
+          .toHaveLength(2 + dynamicRoots);
+        expect(snapshot.evidence[0]?.details.capturedRoots).toBe(2 + dynamicRoots);
+      }
+      const stable = await client.capture(page);
+      expect(await client.capture(page)).toEqual(stable);
+      expect(decodeTq1(encodeTq1(stable))).toEqual(stable);
+    } finally {
+      await instrumentation.dispose();
+    }
   });
 
   test('detached frame churn degrades to explicit frame status without breaking graph closure', async ({ page }) => {

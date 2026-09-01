@@ -21,6 +21,7 @@ This keeps framework and driver dependencies outside the core while preserving f
 ```ts
 const domstamp = createDomstamp(adapter, {
   defaults,
+  evidenceProviders,
   plugins,
   now // optional monotonic clock injection for tests
 });
@@ -52,7 +53,7 @@ Every mode is bounded by `maxNodesPerFrame`, `maxDepth`, `maxFrames`, `maxSnapsh
 
 ## Capabilities
 
-Capabilities are explicit strings such as `dom`, `layout`, `frames`, `cross-origin-frames`, `interaction`, `pixels`, and `accessibility-tree`. Domstamp calculates the capabilities required by the resolved configuration and rejects unsupported combinations before invoking the adapter. `shadowRoots: "all-available"` additionally requires `closed-shadow-roots`; the Playwright adapter only advertises open roots.
+Capabilities are explicit strings such as `dom`, `layout`, `frames`, `cross-origin-frames`, `interaction`, `pixels`, and `accessibility-tree`. Domstamp calculates the capabilities required by the resolved configuration and rejects unsupported combinations before invoking the adapter. `shadowRoots: "all-available"` additionally requires `closed-shadow-roots`; Playwright advertises it only when constructed with pre-navigation closed-root instrumentation.
 
 An adapter must not advertise a capability it only partially implements. Optional output must be disabled or represented explicitly; silent omission is a contract violation.
 
@@ -71,7 +72,7 @@ Caller cancellation reports `ABORTED`; expiration of `limits.timeoutMs` reports 
 Capture stages execute in this order:
 
 ```text
-beforeCapture → adapter → validation → structural redaction → transform → validation → afterCapture
+beforeCapture → adapter → validation → evidence providers → validation → structural redaction → transform → validation → afterCapture
 ```
 
 Plugin failures use `PLUGIN_FAILED` with plugin and hook metadata. Error hooks cannot replace the original error. Every transformed snapshot is schema-validated and size-checked again.
@@ -82,6 +83,7 @@ All expected library failures use `DomstampError` and a stable code:
 
 - `ABORTED`
 - `CAPTURE_FAILED`
+- `EVIDENCE_PROVIDER_FAILED`
 - `INVALID_CONFIG`
 - `INVALID_SNAPSHOT`
 - `PLUGIN_FAILED`
@@ -93,7 +95,13 @@ Consumers should branch on `code`, never parse error messages.
 
 ## Schema versioning
 
-Snapshots carry both `format: "domstamp"` and `schemaVersion`. Schema 2 is current. `inspectSnapshotCompatibility` recognizes schema 1 and 2, while `migrateSnapshot` validates current data and explicitly upgrades schema 1. Unknown versions fail with `UNSUPPORTED_SCHEMA`. The duration of this compatibility window must be finalized before `1.0.0`.
+Snapshots carry both `format: "domstamp"` and `schemaVersion`. Schema 3 is current. `inspectSnapshotCompatibility` recognizes schemas 1, 2, and 3, while `migrateSnapshot` validates current data and explicitly upgrades schemas 1 and 2. Schema 3 adds bounded evidence provenance with completeness, privilege, sensitivity, provider, source, and frame linkage. Unknown versions fail with `UNSUPPORTED_SCHEMA`.
+
+During `0.x`, a schema change requires a minor package release and the current reader supports at least the two immediately preceding schemas. A patch release does not intentionally break the TypeScript API or schema. Every schema accepted by the `1.0` reader remains readable throughout `1.x`; removal requires a major release and prior deprecation notice.
+
+## Evidence providers
+
+`DomstampEvidenceProvider<TTarget, TAdapterOptions>` collects provenance observations after stable adapter validation. Provider identity is supplied by the core, observations are validated and deadline-bound, and structural redaction runs before plugins receive them. Successful collections emit `EVIDENCE_COLLECTED`; provider failures emit `EVIDENCE_PROVIDER_FAILED`.
 
 ## Adapter conformance
 

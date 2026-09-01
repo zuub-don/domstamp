@@ -238,7 +238,23 @@ const scenarios = {
       context.font = '20px sans-serif';
       context.fillText('pixel-${seed}', 18, 42);
       const closed = document.querySelector('#closed-widget').attachShadow({ mode: 'closed' });
-      closed.innerHTML = '<button>inaccessible closed control</button>';
+      closed.innerHTML = '<button>inaccessible closed control</button><nested-closed id="nested-closed"></nested-closed><div id="dynamic-zone"></div>';
+      const nested = closed.querySelector('#nested-closed').attachShadow({ mode: 'closed' });
+      nested.innerHTML = '<span>nested closed value ${seed}</span>';
+      const dynamicHosts = [];
+      window.__GYM__.addClosedRoot = () => {
+        const host = document.createElement('dynamic-closed');
+        closed.querySelector('#dynamic-zone').append(host);
+        const root = host.attachShadow({ mode: 'closed' });
+        root.innerHTML = '<input value="dynamic-closed-${seed}">';
+        dynamicHosts.push(host);
+        return dynamicHosts.length;
+      };
+      window.__GYM__.churnClosedRoots = action => {
+        if (action === 'remove') dynamicHosts.pop()?.remove();
+        else window.__GYM__.addClosedRoot();
+        return dynamicHosts.length;
+      };
     `),
 
   'frame-churn': ({ seed }) => shell('frame-churn', seed, `

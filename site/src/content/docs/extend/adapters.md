@@ -82,7 +82,7 @@ Do not advertise a capability with partial, silently omitted output. Introduce a
 - Honor `context.signal` before and during expensive work.
 - Obey resolved node, depth, frame, and time limits.
 - Represent truncation and frame failures explicitly.
-- Return schema version 2 and valid closed references.
+- Return schema version 3, an evidence array, and valid closed references.
 - Avoid mutating the inspected page beyond any documented observer or instrumentation.
 - Keep traversal iterative for attacker-controlled depth.
 

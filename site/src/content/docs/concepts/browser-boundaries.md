@@ -12,7 +12,7 @@ Domstamp models boundaries explicitly so callers can distinguish “absent in th
 | Light DOM | Supported | Elements, text, comments, attributes, paths, relationships |
 | Template contents | Supported | A `document-fragment` below the template path |
 | Open Shadow DOM | Supported | A `shadow-root` node and its descendants |
-| Closed Shadow DOM | Unavailable | Requires `closed-shadow-roots`; Playwright adapter does not advertise it |
+| Closed Shadow DOM | Opt-in instrumentation | Author-created roots observed by a pre-navigation preload, with per-frame provenance |
 | Same-origin iframe | Supported | Independent `DocumentSnapshot` linked to its owner path |
 | Cross-origin iframe | Supported | Independent document through Playwright’s frame execution boundary |
 | Runtime form state | Supported | Values, checked/selected state, text selection |
@@ -47,7 +47,7 @@ Set `frames: false` to capture only the main document, or `crossOrigin: false` t
 - `open`: traverse roots available through `element.shadowRoot`.
 - `all-available`: requires the adapter to advertise `closed-shadow-roots` in addition to open roots.
 
-The Playwright adapter deliberately rejects `all-available`; treating it as an alias for `open` would be misleading.
+The default Playwright adapter rejects `all-available`; treating it as an alias for `open` would be misleading. An adapter constructed with a token from `installClosedShadowInstrumentation(context)` advertises `closed-shadow-roots` and labels the resulting coverage `instrumented`. Roots created before installation, user-agent roots, and hooks defeated by hostile page code remain outside that claim.
 
 ## Driver differences
 

@@ -1,7 +1,8 @@
 export const SNAPSHOT_FORMAT = 'domstamp' as const;
-export const SNAPSHOT_SCHEMA_VERSION = 2 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 3 as const;
 export const LEGACY_SNAPSHOT_SCHEMA_VERSION = 1 as const;
-export const SUPPORTED_SNAPSHOT_SCHEMA_VERSIONS = Object.freeze([1, 2] as const);
+export const PREVIOUS_SNAPSHOT_SCHEMA_VERSION = 2 as const;
+export const SUPPORTED_SNAPSHOT_SCHEMA_VERSIONS = Object.freeze([1, 2, 3] as const);
 
 export type CaptureMode = 'document' | 'viewport' | 'focus';
 
@@ -91,6 +92,25 @@ export interface SnapshotAttachment {
   readonly height: number;
 }
 
+export type EvidenceCompleteness = 'complete' | 'partial' | 'instrumented' | 'unavailable';
+export type EvidencePrivilege = 'standard' | 'instrumented' | 'browser' | 'system';
+export type EvidenceSensitivity = 'normal' | 'sensitive' | 'highly-sensitive';
+export type EvidenceDetailValue = boolean | number | string | null;
+
+/** Provenance for a capture layer whose fidelity differs from ordinary page DOM. */
+export interface SnapshotEvidence {
+  readonly id: string;
+  readonly kind: string;
+  readonly frameId: string | null;
+  readonly provider: string;
+  readonly providerVersion: string;
+  readonly source: string;
+  readonly completeness: EvidenceCompleteness;
+  readonly privilege: EvidencePrivilege;
+  readonly sensitivity: EvidenceSensitivity;
+  readonly details: Readonly<Record<string, EvidenceDetailValue>>;
+}
+
 export interface DomSnapshotV1 {
   readonly format: typeof SNAPSHOT_FORMAT;
   readonly schemaVersion: typeof LEGACY_SNAPSHOT_SCHEMA_VERSION;
@@ -100,9 +120,9 @@ export interface DomSnapshotV1 {
   readonly documents: readonly DocumentSnapshot[];
 }
 
-export interface DomSnapshot {
+export interface DomSnapshotV2 {
   readonly format: typeof SNAPSHOT_FORMAT;
-  readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;
+  readonly schemaVersion: typeof PREVIOUS_SNAPSHOT_SCHEMA_VERSION;
   readonly viewport: Readonly<{ width: number; height: number }> | null;
   readonly pointer: Readonly<{ x: number; y: number; type: string; buttons: number }> | null;
   readonly framesTruncated: boolean;
@@ -111,4 +131,9 @@ export interface DomSnapshot {
   readonly attachments: readonly SnapshotAttachment[];
 }
 
-export type SupportedDomSnapshot = DomSnapshotV1 | DomSnapshot;
+export interface DomSnapshot extends Omit<DomSnapshotV2, 'schemaVersion'> {
+  readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;
+  readonly evidence: readonly SnapshotEvidence[];
+}
+
+export type SupportedDomSnapshot = DomSnapshotV1 | DomSnapshotV2 | DomSnapshot;

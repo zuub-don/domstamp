@@ -26,7 +26,7 @@ const capabilities = [
 export function puppeteerAdapter(): DomstampAdapter<PuppeteerPage, PuppeteerAdapterOptions> {
   return Object.freeze({
     name: '@domstamp/puppeteer',
-    version: '0.2.0',
+    version: '0.3.0',
     capabilities: new Set(capabilities),
     defaults: {
       features: { accessibility: false as const, pixels: false as const }

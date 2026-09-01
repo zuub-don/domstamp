@@ -10,6 +10,7 @@ import {
   type AdapterCapability,
   type DomSnapshot,
   type DomstampAdapter,
+  type DomstampEvidenceProvider,
   type DomstampPlugin
 } from 'domstamp';
 import { decodeTq1, encodeTq1, Tq1Error } from '@domstamp/tq1';
@@ -28,7 +29,7 @@ const allDefaultCapabilities = new Set<AdapterCapability>([
 function snapshot(status: 'stable' | 'unstable' = 'stable'): DomSnapshot {
   return {
     format: 'domstamp',
-    schemaVersion: 2,
+    schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     viewport: { width: 1280, height: 720 },
     pointer: null,
     framesTruncated: false,
@@ -63,7 +64,8 @@ function snapshot(status: 'stable' | 'unstable' = 'stable'): DomSnapshot {
       }]
     }],
     accessibility: [],
-    attachments: []
+    attachments: [],
+    evidence: []
   };
 }
 
@@ -79,7 +81,7 @@ function fakeAdapter(
 }
 
 test.describe('@conformance @core public TypeScript contract', () => {
-  test('schema v1 fixtures migrate explicitly to the current stable shape', () => {
+  test('schema v1 and v2 fixtures migrate explicitly to the current stable shape', () => {
     const legacy = JSON.parse(readFileSync(
       new URL('./fixtures/schema/v1-minimal.json', import.meta.url),
       'utf8'
@@ -96,7 +98,22 @@ test.describe('@conformance @core public TypeScript contract', () => {
       ...(legacy as Record<string, unknown>),
       schemaVersion: SNAPSHOT_SCHEMA_VERSION,
       accessibility: [],
-      attachments: []
+      attachments: [],
+      evidence: []
+    });
+    const previous = JSON.parse(readFileSync(
+      new URL('./fixtures/schema/v2-minimal.json', import.meta.url),
+      'utf8'
+    )) as unknown;
+    expect(inspectSnapshotCompatibility(previous)).toMatchObject({
+      schemaVersion: 2,
+      readable: true,
+      migrationRequired: true
+    });
+    expect(migrateSnapshot(previous)).toEqual({
+      ...(previous as Record<string, unknown>),
+      schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      evidence: []
     });
     expect(() => migrateSnapshot({ ...(legacy as Record<string, unknown>), schemaVersion: 99 })).toThrowError(
       expect.objectContaining({ code: 'UNSUPPORTED_SCHEMA' })
@@ -151,6 +168,18 @@ test.describe('@conformance @core public TypeScript contract', () => {
           states: { autocomplete: secret },
           domPath: '0'
         }]
+      }],
+      evidence: [{
+        id: 'fixture-sensitive',
+        kind: 'fixture-state',
+        frameId: 'frame-0',
+        provider: 'fixture',
+        providerVersion: '1.0.0',
+        source: 'fixture',
+        completeness: 'complete',
+        privilege: 'standard',
+        sensitivity: 'sensitive',
+        details: { note: `evidence-${secret}` }
       }]
     };
     const client = createDomstamp(fakeAdapter(async () => captured), {
@@ -198,6 +227,49 @@ test.describe('@conformance @core public TypeScript contract', () => {
     expect(Object.isFrozen(received)).toBe(true);
     expect(Object.isFrozen((received as { features: object }).features)).toBe(true);
     expect(client.adapter.name).toBe('fake');
+  });
+
+  test('evidence providers add validated provenance after adapter capture', async () => {
+    const provider: DomstampEvidenceProvider<string> = {
+      name: 'fixture-evidence',
+      version: '1.2.3',
+      collect: ({ target, snapshot: captured }) => [{
+        id: 'fixture:frame-0',
+        kind: 'fixture-state',
+        frameId: captured.documents[0]!.frameId,
+        source: 'test-provider',
+        completeness: 'complete',
+        privilege: 'standard',
+        sensitivity: 'normal',
+        details: { target, nodes: captured.documents[0]!.nodes.length }
+      }]
+    };
+    const result = await createDomstamp(fakeAdapter(), { evidenceProviders: [provider] })
+      .captureDetailed('framework-target');
+
+    expect(result.snapshot.evidence).toEqual([{
+      id: 'fixture:frame-0',
+      kind: 'fixture-state',
+      frameId: 'frame-0',
+      provider: 'fixture-evidence',
+      providerVersion: '1.2.3',
+      source: 'test-provider',
+      completeness: 'complete',
+      privilege: 'standard',
+      sensitivity: 'normal',
+      details: { target: 'framework-target', nodes: 1 }
+    }]);
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'EVIDENCE_COLLECTED' }));
+  });
+
+  test('evidence provider failures retain a stable public error code', async () => {
+    const broken: DomstampEvidenceProvider<string> = {
+      name: 'broken-evidence',
+      version: '1.0.0',
+      collect: () => { throw new Error('collector failed'); }
+    };
+    await expect(createDomstamp(fakeAdapter(), { evidenceProviders: [broken] }).capture('target'))
+      .rejects.toMatchObject({ code: 'EVIDENCE_PROVIDER_FAILED' });
   });
 
   test('the public adapter conformance kit is driver-neutral and deterministic', async () => {

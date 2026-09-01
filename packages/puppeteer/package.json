@@ -1,6 +1,6 @@
 {
   "name": "@domstamp/puppeteer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Puppeteer adapter for the framework-neutral Domstamp snapshot API.",
   "keywords": [
     "puppeteer",
@@ -30,12 +30,12 @@
   "scripts": {
     "build": "tsc -b",
     "prepack": "npm run build",
-    "prepublishOnly": "node ../../scripts/check-versions.mjs"
+    "prepublishOnly": "node ../../scripts/check-release.mjs"
   },
   "dependencies": {
-    "@domstamp/playwright": "^0.2.0",
-    "domstamp": "^0.2.0"
+    "@domstamp/playwright": "^0.3.0",
+    "domstamp": "^0.3.0"
   },
-  "peerDependencies": { "puppeteer-core": ">=24 <25" },
+  "peerDependencies": { "puppeteer-core": ">=25 <26" },
   "publishConfig": { "access": "public", "provenance": true }
 }

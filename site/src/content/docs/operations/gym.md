@@ -21,6 +21,7 @@ The runner uses the pinned Playwright image and tests Chromium, Firefox, and Web
 - semantic HTML, comments, hidden and offscreen content;
 - runtime form values, focus, selection, and content-editable state;
 - open and nested Shadow DOM;
+- nested, dynamic, cross-origin, and churned instrumented closed Shadow DOM;
 - same-origin, cross-origin, and nested frame ownership;
 - viewport boundaries, geometry, scrolling, and pointer state;
 - Unicode graphemes, SVG, MathML, and template fragments;
@@ -44,7 +45,7 @@ npm run test:chromium
 npm run test:matrix
 ```
 
-Public contract tests cover configuration precedence, capability failure, deadlines, cancellation, retry behavior, plugin order, hostile snapshot validation, TQ1 limits, and feature switches.
+Public contract tests cover configuration precedence, capability failure, deadlines, cancellation, retry behavior, evidence-provider and plugin order, hostile snapshot validation, schema migration, TQ1 limits, and feature switches.
 
 ## Artifacts
 

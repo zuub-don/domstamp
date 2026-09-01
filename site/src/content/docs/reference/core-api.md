@@ -18,6 +18,7 @@ Options:
 
 - `defaults`: persistent `CaptureSettings`.
 - `plugins`: ordered plugin list with unique, non-empty names.
+- `evidenceProviders`: ordered, explicit evidence collectors with unique names and versions.
 - `now`: optional monotonic clock injection for deterministic tests.
 
 ## `Domstamp`
@@ -64,7 +65,7 @@ function validateSnapshot(
 ): asserts snapshot is DomSnapshot;
 ```
 
-`validateSnapshot` checks schema identity, document and node metadata, parent graphs, reference closure, accessibility graphs, attachment metadata, geometry, runtime state, serialization fields, and optional document/node/depth ceilings. It throws `INVALID_SNAPSHOT` on failure.
+`validateSnapshot` checks schema identity, document and node metadata, parent graphs, reference closure, accessibility graphs, attachment metadata, evidence provenance, geometry, runtime state, serialization fields, and optional document/node/depth ceilings. It throws `INVALID_SNAPSHOT` on failure.
 
 ## Compatibility and migration
 
@@ -73,7 +74,20 @@ function inspectSnapshotCompatibility(value: unknown): SnapshotCompatibility;
 function migrateSnapshot(value: unknown): DomSnapshot;
 ```
 
-The compatibility inspector recognizes supported schema versions without claiming that the remaining graph is valid. `migrateSnapshot` validates current schema-2 data and explicitly migrates schema 1 by adding empty accessibility and attachment arrays before validating the complete result. Unknown versions throw `UNSUPPORTED_SCHEMA`.
+The compatibility inspector recognizes supported schema versions without claiming that the remaining graph is valid. `migrateSnapshot` validates current schema-3 data and explicitly migrates schemas 1 and 2 by adding missing arrays before validating the complete result. Unknown versions throw `UNSUPPORTED_SCHEMA`.
+
+## Evidence providers
+
+```ts
+interface DomstampEvidenceProvider<TTarget, TAdapterOptions = unknown> {
+  readonly name: string;
+  readonly version: string;
+  collect(context: EvidenceProviderContext<TTarget, TAdapterOptions>):
+    readonly EvidenceObservation[] | Promise<readonly EvidenceObservation[]>;
+}
+```
+
+Providers run after stable adapter validation and before structural redaction. Treat them as trusted capture infrastructure: they can inspect raw adapter output. The core supplies provider identity, validates merged provenance, applies the capture deadline, and emits `EVIDENCE_COLLECTED`. Failures use `EVIDENCE_PROVIDER_FAILED`.
 
 ## Redaction
 

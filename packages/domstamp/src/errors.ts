@@ -1,6 +1,7 @@
 export type DomstampErrorCode =
   | 'ABORTED'
   | 'CAPTURE_FAILED'
+  | 'EVIDENCE_PROVIDER_FAILED'
   | 'INVALID_CONFIG'
   | 'INVALID_SNAPSHOT'
   | 'PLUGIN_FAILED'

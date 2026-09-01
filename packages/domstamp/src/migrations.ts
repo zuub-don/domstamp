@@ -2,11 +2,13 @@ import { DomstampError } from './errors.js';
 import { validateSnapshot } from './client.js';
 import {
   LEGACY_SNAPSHOT_SCHEMA_VERSION,
+  PREVIOUS_SNAPSHOT_SCHEMA_VERSION,
   SNAPSHOT_FORMAT,
   SNAPSHOT_SCHEMA_VERSION,
   SUPPORTED_SNAPSHOT_SCHEMA_VERSIONS,
   type DomSnapshot,
   type DomSnapshotV1,
+  type DomSnapshotV2,
   type SupportedDomSnapshot
 } from './schema.js';
 
@@ -58,7 +60,18 @@ export function migrateSnapshot(value: unknown): DomSnapshot {
       ...legacy,
       schemaVersion: SNAPSHOT_SCHEMA_VERSION,
       accessibility: [],
-      attachments: []
+      attachments: [],
+      evidence: []
+    };
+    validateSnapshot(migrated);
+    return migrated;
+  }
+  if (compatibility.schemaVersion === PREVIOUS_SNAPSHOT_SCHEMA_VERSION) {
+    const previous = value as unknown as DomSnapshotV2;
+    const migrated: DomSnapshot = {
+      ...previous,
+      schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      evidence: []
     };
     validateSnapshot(migrated);
     return migrated;

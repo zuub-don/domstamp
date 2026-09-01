@@ -1,6 +1,6 @@
 {
   "name": "domstamp-gym",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -28,7 +28,10 @@
     "clean": "tsc -b packages/domstamp packages/tq1 packages/playwright packages/puppeteer --clean",
     "publint": "publint run packages/domstamp --strict --pack=false && publint run packages/tq1 --strict --pack=false && publint run packages/playwright --strict --pack=false && publint run packages/puppeteer --strict --pack=false",
     "attw": "attw --pack packages/domstamp --profile esm-only && attw --pack packages/tq1 --profile esm-only && attw --pack packages/playwright --profile esm-only && attw --pack packages/puppeteer --profile esm-only",
+    "pack:check": "node scripts/check-packs.mjs",
     "version:check": "node scripts/check-versions.mjs",
+    "release:check": "npm run version:check && node scripts/check-release.mjs",
+    "release:dry-run": "npm audit --audit-level=high && npm run verify && npm run pack:check && npm run release:check",
     "verify": "npm run version:check && npm run typecheck && npm run build && npm run docs:check && npm run docs:build && npm run publint && npm run attw",
     "test": "playwright test",
     "test:conformance": "playwright test --grep @conformance",
@@ -49,7 +52,7 @@
     "astro": "^7.2.10",
     "cross-env": "^10.1.0",
     "publint": "^0.3.24",
-    "puppeteer-core": "^24.17.1",
+    "puppeteer-core": "25.9.0",
     "typescript": "5.9.2"
   }
 }

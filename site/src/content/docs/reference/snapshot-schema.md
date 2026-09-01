@@ -1,6 +1,6 @@
 ---
 title: Snapshot schema
-description: Version 2 DOM, accessibility, attachment, relationship, interaction, and migration fields.
+description: Version 3 DOM, accessibility, evidence provenance, attachment, relationship, interaction, and migration fields.
 ---
 
 Every snapshot carries both a format identifier and schema version.
@@ -8,13 +8,14 @@ Every snapshot carries both a format identifier and schema version.
 ```ts
 interface DomSnapshot {
   readonly format: 'domstamp';
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly viewport: { width: number; height: number } | null;
   readonly pointer: { x: number; y: number; type: string; buttons: number } | null;
   readonly framesTruncated: boolean;
   readonly documents: readonly DocumentSnapshot[];
   readonly accessibility: readonly AccessibilityTree[];
   readonly attachments: readonly SnapshotAttachment[];
+  readonly evidence: readonly SnapshotEvidence[];
 }
 ```
 
@@ -65,7 +66,7 @@ The representation is flat to keep traversal, validation, serialization, and dow
 Paths are capture-local structural addresses:
 
 - numeric segments represent ordinary child-node indices;
-- `s` crosses into an open shadow root;
+- `s` crosses into an open or instrumented closed shadow root;
 - `t` crosses into template content.
 
 Paths are useful for ownership and comparison within the captured structure. They are not durable selectors across arbitrary page mutations.
@@ -94,10 +95,33 @@ Each requested tree is linked by `frameId`. Nodes contain a capture-local string
 
 ## Attachments
 
-Schema 2 defines screenshot attachments with an ID, frame link, PNG or JPEG media type, base64 data, byte length, SHA-256, width, and height. Attachment hashes verify bytes; they are not cross-environment visual-equality promises.
+Schema 2 introduced screenshot attachments with an ID, frame link, PNG or JPEG media type, base64 data, byte length, SHA-256, width, and height. Attachment hashes verify bytes; they are not cross-environment visual-equality promises.
+
+## Evidence provenance
+
+Schema 3 adds bounded metadata for capture layers whose fidelity differs from ordinary page DOM:
+
+```ts
+interface SnapshotEvidence {
+  readonly id: string;
+  readonly kind: string;
+  readonly frameId: string | null;
+  readonly provider: string;
+  readonly providerVersion: string;
+  readonly source: string;
+  readonly completeness: 'complete' | 'partial' | 'instrumented' | 'unavailable';
+  readonly privilege: 'standard' | 'instrumented' | 'browser' | 'system';
+  readonly sensitivity: 'normal' | 'sensitive' | 'highly-sensitive';
+  readonly details: Readonly<Record<string, boolean | number | string | null>>;
+}
+```
+
+Evidence records are provenance, not a license to imply completeness. Playwright closed-root capture uses `instrumented`, even when every root observed by the preload was captured.
 
 ## Compatibility
 
-The current reader accepts schema 1 and 2. Use `inspectSnapshotCompatibility(value)` before loading stored data and `migrateSnapshot(value)` to explicitly convert schema 1 to schema 2. Migration validates the complete resulting graph, adds empty accessibility and attachment arrays, and never fabricates evidence that an older capture did not contain.
+The current reader accepts schema 1, 2, and 3. Use `inspectSnapshotCompatibility(value)` before loading stored data and `migrateSnapshot(value)` to explicitly convert schema 1 or 2 to schema 3. Migration validates the complete resulting graph, adds missing arrays, and never fabricates evidence that an older capture did not contain.
 
-Unknown versions fail with `UNSUPPORTED_SCHEMA`. Historical JSON fixtures in the conformance suite prevent accidental removal of the supported migration path. The project has not yet committed to the duration of the post-1.0 compatibility window.
+Unknown versions fail with `UNSUPPORTED_SCHEMA`. Historical JSON fixtures in the conformance suite prevent accidental removal of the supported migration path.
+
+During `0.x`, a schema change requires a minor package release and the current reader supports at least the two immediately preceding schemas. A patch does not intentionally break the schema. Every schema accepted by the `1.0` reader remains readable throughout `1.x`; removal requires a major package release and prior deprecation notice.

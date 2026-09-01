@@ -2,7 +2,7 @@
 
 Domstamp captures the browser state an automation agent could perceive at a specific moment. The core is framework-neutral: React, Vue, Angular, Svelte, server-rendered HTML, and vanilla DOM all produce the same snapshot model, while browser automation tools plug in through typed adapters.
 
-Current release candidate: **`0.2.0` preview**. The source is public, but the npm packages have not been published.
+Current source release: **`0.3.0` preview**. The package boundary and guarded release workflow are ready, but the npm packages have not been published.
 
 [Documentation](https://zuub-don.github.io/domstamp/) · [Public API](docs/PUBLIC_API.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
@@ -24,7 +24,7 @@ const snapshot = await domstamp.capture(page);
 
 | Package | Responsibility | Runtime dependencies |
 |---|---|---|
-| `domstamp` | Schema, typed configuration, orchestration, plugins, validation | none |
+| `domstamp` | Schema, typed configuration, orchestration, evidence providers, plugins, validation | none |
 | `@domstamp/playwright` | DOM/frame walker, ARIA perception trees, and masked pixel evidence | `playwright-core` peer |
 | `@domstamp/puppeteer` | Puppeteer DOM, frame, layout, and interaction adapter | `puppeteer-core` peer; shared preview walker |
 | `@domstamp/tq1` | Lossless dictionary and gzip encoding with decode limits | Node standard library |
@@ -81,9 +81,31 @@ const snapshot = await domstamp.capture(page, {
 
 Structural redaction runs in the core before consumer plugins. Redacted pixels require masks because changing DOM strings cannot alter already-rasterized screenshot content.
 
+## Closed Shadow DOM and evidence provenance
+
+Closed roots require explicit instrumentation before page scripts create them:
+
+```ts
+import {
+  installClosedShadowInstrumentation,
+  playwrightAdapter
+} from '@domstamp/playwright';
+
+const closedShadowRoots = await installClosedShadowInstrumentation(context);
+const page = await context.newPage();
+const domstamp = createDomstamp(playwrightAdapter({ closedShadowRoots }));
+
+await page.goto(targetUrl);
+const snapshot = await domstamp.capture(page, {
+  features: { dom: { shadowRoots: 'all-available' } }
+});
+```
+
+Schema 3 records per-frame evidence provenance with its source, provider version, completeness, privilege, sensitivity, and captured-root count. Instrumented coverage is never mislabeled as native or universally complete. Browser chrome and JavaScript heap capture remain outside the standard snapshot.
+
 ## Schema compatibility
 
-Schema 2 is current. Historical schema-1 snapshots migrate explicitly and are validated as complete graphs:
+Schema 3 is current. Historical schema-1 and schema-2 snapshots migrate explicitly and are validated as complete graphs:
 
 ```ts
 import { inspectSnapshotCompatibility, migrateSnapshot } from 'domstamp';
@@ -92,7 +114,7 @@ const compatibility = inspectSnapshotCompatibility(stored);
 const snapshot = migrateSnapshot(stored);
 ```
 
-Unknown versions fail with `UNSUPPORTED_SCHEMA`; no migration silently invents accessibility or pixel evidence.
+Unknown versions fail with `UNSUPPORTED_SCHEMA`; migrations add empty fields rather than inventing accessibility, pixel, or privileged evidence.
 
 ## Puppeteer
 
@@ -103,7 +125,7 @@ import { puppeteerAdapter } from '@domstamp/puppeteer';
 const snapshot = await createDomstamp(puppeteerAdapter()).capture(page);
 ```
 
-Puppeteer supports DOM, open Shadow DOM, same- and cross-origin frames, layout, interaction state, and mutation consistency. Optional accessibility and pixel layers remain Playwright-only in `0.2.0`.
+Puppeteer supports DOM, open Shadow DOM, same- and cross-origin frames, layout, interaction state, and mutation consistency. Optional accessibility, pixel, and instrumented closed-root layers remain Playwright-only in `0.3.0`.
 
 See [PUBLIC_API.md](docs/PUBLIC_API.md) for configuration precedence, adapters, plugins, errors, and schema guarantees.
 
@@ -153,7 +175,7 @@ The gym emits Playwright traces, screenshots, exact chaos plans, replay commands
 
 ## Release path
 
-Schema 2, explicit schema-1 migration, structural redaction, Playwright accessibility/pixels, the Puppeteer adapter, conformance gym, and searchable documentation are ready for evaluation. The compatibility window may still change during `0.x`. See [DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for the remaining publication and `1.0` work.
+Schema 3, explicit schema-1/schema-2 migration, evidence provenance, instrumented closed roots, structural redaction, Playwright accessibility/pixels, the Puppeteer adapter, conformance gym, searchable documentation, and guarded release automation are ready for evaluation. See [RELEASING.md](docs/RELEASING.md) for the candidate gate and first-publication prerequisites, and [DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) for the remaining `1.0` work.
 
 ## Security and license
 

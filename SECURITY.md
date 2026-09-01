@@ -8,9 +8,9 @@ Do not open public issues for vulnerabilities. Report them privately through [Gi
 
 Treat pages and encoded snapshots as untrusted input. A captured page may attempt to exhaust memory, mutate continuously, detach frames, override globals, or expose secrets. A TQ1 payload may attempt decompression bombs, extreme nesting, oversized collections, invalid references, or prototype pollution.
 
-The implementation provides traversal budgets, frame budgets, byte ceilings, timeouts, abort signals, snapshot referential validation, gzip output limits, structural decode limits, and safe definition of hostile object keys. These controls reduce risk but do not make it safe to capture arbitrary hostile websites inside a privileged browser profile.
+The implementation provides traversal budgets, frame budgets, byte ceilings, timeouts, abort signals, snapshot referential validation, gzip output limits, structural decode limits, and safe definition of hostile object keys. Schema 3 evidence records also carry explicit sensitivity and privilege labels; those labels describe handling requirements and do not sanitize provider output. These controls reduce risk but do not make it safe to capture arbitrary hostile websites inside a privileged browser profile.
 
-Use an isolated browser context and container, avoid ambient credentials, and configure the smallest required capture surface. Trusted structural redaction runs before consumer plugins, while Playwright screenshot redaction requires explicit pixel masks. Test both layers with sentinel secrets before exporting artifacts outside the trust boundary.
+Use an isolated browser context and container, avoid ambient credentials, and configure the smallest required capture surface. Evidence providers run before trusted structural redaction and must keep bounded metadata free of opaque secrets that policy cannot inspect. Trusted structural redaction runs before consumer plugins, while Playwright screenshot redaction requires explicit pixel masks. Test every enabled layer with sentinel secrets before exporting artifacts outside the trust boundary.
 
 ## Supported versions
 

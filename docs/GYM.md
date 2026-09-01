@@ -36,7 +36,7 @@ A pixel image is evidence, but it is not a portable semantic oracle. Font raster
 
 - Document topology: elements, text, comments, hidden/inert/offscreen content, and semantic controls
 - Runtime form state: values that differ from attributes, checked/indeterminate state, focus, and selection
-- Open Shadow DOM: host boundaries, slots, styles, and deep focus
+- Open and instrumented closed Shadow DOM: host boundaries, slots, styles, deep focus, nested roots, dynamic churn, and provenance
 - Browsing contexts: same-origin, cross-origin, and nested foreign-origin frame chains with ownership links
 - Deterministic mutation: explicit logical ticks and replayable state transitions
 - Layout: transforms, fixed overlays, nested scrolling, overflow, and geometry

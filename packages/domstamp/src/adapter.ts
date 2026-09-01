@@ -1,5 +1,5 @@
 import type { CaptureConfig, CaptureSettings } from './config.js';
-import type { DomSnapshot } from './schema.js';
+import type { DomSnapshot, EvidenceCompleteness, EvidenceDetailValue, EvidencePrivilege, EvidenceSensitivity } from './schema.js';
 
 export type AdapterCapability =
   | 'accessibility-tree'
@@ -26,6 +26,33 @@ export interface DomstampAdapter<TTarget, TAdapterOptions = unknown> {
   /** Capability-safe defaults applied before consumer defaults. */
   readonly defaults?: CaptureSettings<TAdapterOptions>;
   capture(target: TTarget, context: AdapterContext<TAdapterOptions>): Promise<DomSnapshot>;
+}
+
+export interface EvidenceObservation {
+  readonly id: string;
+  readonly kind: string;
+  readonly frameId: string | null;
+  readonly source: string;
+  readonly completeness: EvidenceCompleteness;
+  readonly privilege: EvidencePrivilege;
+  readonly sensitivity: EvidenceSensitivity;
+  readonly details?: Readonly<Record<string, EvidenceDetailValue>>;
+}
+
+export interface EvidenceProviderContext<TTarget, TAdapterOptions = unknown> {
+  readonly target: TTarget;
+  readonly adapter: Readonly<{ name: string; version: string }>;
+  readonly config: CaptureConfig<TAdapterOptions>;
+  readonly signal: AbortSignal;
+  readonly snapshot: DomSnapshot;
+}
+
+/** Optional post-adapter evidence collector. Providers are explicit and default off. */
+export interface DomstampEvidenceProvider<TTarget, TAdapterOptions = unknown> {
+  readonly name: string;
+  readonly version: string;
+  collect(context: EvidenceProviderContext<TTarget, TAdapterOptions>):
+    readonly EvidenceObservation[] | Promise<readonly EvidenceObservation[]>;
 }
 
 export interface CaptureDiagnostic {

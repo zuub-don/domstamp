@@ -1,5 +1,5 @@
 import type { DataPolicy } from './config.js';
-import type { AccessibilityNode, DomSnapshot, SnapshotNode } from './schema.js';
+import type { AccessibilityNode, DomSnapshot, SnapshotEvidence, SnapshotNode } from './schema.js';
 
 const DEFAULT_SENSITIVE_ATTRIBUTES = Object.freeze([
   'authorization',
@@ -164,8 +164,17 @@ export function redactSnapshot(snapshot: DomSnapshot, policy: Extract<DataPolicy
       return redacted.node;
     })
   }));
+  const evidence = snapshot.evidence.map((entry): SnapshotEvidence => ({
+    ...entry,
+    details: Object.fromEntries(Object.entries(entry.details).map(([name, value]) => {
+      if (typeof value !== 'string') return [name, value];
+      const [redacted, count] = replaceLiterals(value, needles, replacement);
+      replacements += count;
+      return [name, redacted];
+    }))
+  }));
   return {
-    snapshot: { ...snapshot, documents, accessibility },
+    snapshot: { ...snapshot, documents, accessibility, evidence },
     replacements
   };
 }

@@ -2,6 +2,7 @@ export {
   SNAPSHOT_FORMAT,
   SNAPSHOT_SCHEMA_VERSION,
   LEGACY_SNAPSHOT_SCHEMA_VERSION,
+  PREVIOUS_SNAPSHOT_SCHEMA_VERSION,
   SUPPORTED_SNAPSHOT_SCHEMA_VERSIONS
 } from './schema.js';
 export type {
@@ -12,8 +13,14 @@ export type {
   CaptureMode,
   DocumentSnapshot,
   DomSnapshot,
+  DomSnapshotV2,
+  EvidenceCompleteness,
+  EvidenceDetailValue,
+  EvidencePrivilege,
+  EvidenceSensitivity,
   NodeReference,
   SnapshotAttachment,
+  SnapshotEvidence,
   SnapshotNode,
   DomSnapshotV1,
   SupportedDomSnapshot
@@ -50,6 +57,9 @@ export type {
   CaptureDiagnostic,
   CaptureResult,
   DomstampAdapter,
+  DomstampEvidenceProvider,
   DomstampPlugin,
+  EvidenceObservation,
+  EvidenceProviderContext,
   PluginContext
 } from './adapter.js';

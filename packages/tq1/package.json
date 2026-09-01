@@ -1,6 +1,6 @@
 {
   "name": "@domstamp/tq1",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Lossless dictionary and gzip encoding for Domstamp snapshots.",
   "keywords": ["lossless-compression", "gzip", "serialization", "dom-snapshot", "typescript"],
   "author": "Domstamp contributors",
@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc -b",
     "prepack": "npm run build",
-    "prepublishOnly": "node ../../scripts/check-versions.mjs"
+    "prepublishOnly": "node ../../scripts/check-release.mjs"
   },
   "publishConfig": { "access": "public", "provenance": true }
 }

@@ -33,6 +33,8 @@ Default: `{ mode: 'document' }`.
 | `shadowRoots` | `'none' \| 'open' \| 'all-available'` | `'open'` |
 | `templates` | `boolean` | `true` |
 
+`all-available` requires `closed-shadow-roots`. The default Playwright adapter does not advertise that capability; construct it with a token from `installClosedShadowInstrumentation(context)` when instrumented author-root coverage is appropriate.
+
 ## Layout
 
 `features.layout` is `false` or:
