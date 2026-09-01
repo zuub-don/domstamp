@@ -4,6 +4,7 @@ const externalGym = process.env.GYM_BASE_URL;
 
 export default defineConfig({
   testDir: './tests',
+  tsconfig: './tsconfig.json',
   outputDir: './artifacts/test-results',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),

@@ -5,7 +5,8 @@ export type DomstampErrorCode =
   | 'INVALID_SNAPSHOT'
   | 'PLUGIN_FAILED'
   | 'TIMEOUT'
-  | 'UNSUPPORTED_CAPABILITY';
+  | 'UNSUPPORTED_CAPABILITY'
+  | 'UNSUPPORTED_SCHEMA';
 
 export class DomstampError extends Error {
   readonly code: DomstampErrorCode;

@@ -17,7 +17,8 @@
     "paths": {
       "domstamp": ["packages/domstamp/src/index.ts"],
       "@domstamp/tq1": ["packages/tq1/src/index.ts"],
-      "@domstamp/playwright": ["packages/playwright/src/index.ts"]
+      "@domstamp/playwright": ["packages/playwright/src/index.ts"],
+      "@domstamp/puppeteer": ["packages/puppeteer/src/index.ts"]
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "domstamp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-neutral, lossless browser-state snapshot orchestration for automation and AI agents.",
   "keywords": [
     "browser-automation",
@@ -40,7 +40,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "prepublishOnly": "node ../../scripts/check-versions.mjs"
   },
   "publishConfig": {
     "access": "public",

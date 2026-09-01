@@ -1,6 +1,6 @@
 {
   "name": "domstamp-gym",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -24,11 +24,12 @@
     "docs:build": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro --root site build",
     "docs:check": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro check --root site --tsconfig tsconfig.json",
     "docs:preview": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro --root site preview",
-    "build": "tsc -b packages/domstamp packages/tq1 packages/playwright",
-    "clean": "tsc -b packages/domstamp packages/tq1 packages/playwright --clean",
-    "publint": "publint run packages/domstamp --strict --pack=false && publint run packages/tq1 --strict --pack=false && publint run packages/playwright --strict --pack=false",
-    "attw": "attw --pack packages/domstamp --profile esm-only && attw --pack packages/tq1 --profile esm-only && attw --pack packages/playwright --profile esm-only",
-    "verify": "npm run typecheck && npm run build && npm run docs:check && npm run docs:build && npm run publint && npm run attw",
+    "build": "tsc -b packages/domstamp packages/tq1 packages/playwright packages/puppeteer",
+    "clean": "tsc -b packages/domstamp packages/tq1 packages/playwright packages/puppeteer --clean",
+    "publint": "publint run packages/domstamp --strict --pack=false && publint run packages/tq1 --strict --pack=false && publint run packages/playwright --strict --pack=false && publint run packages/puppeteer --strict --pack=false",
+    "attw": "attw --pack packages/domstamp --profile esm-only && attw --pack packages/tq1 --profile esm-only && attw --pack packages/playwright --profile esm-only && attw --pack packages/puppeteer --profile esm-only",
+    "version:check": "node scripts/check-versions.mjs",
+    "verify": "npm run version:check && npm run typecheck && npm run build && npm run docs:check && npm run docs:build && npm run publint && npm run attw",
     "test": "playwright test",
     "test:conformance": "playwright test --grep @conformance",
     "test:chaos": "playwright test --grep @chaos",
@@ -48,6 +49,7 @@
     "astro": "^7.2.10",
     "cross-env": "^10.1.0",
     "publint": "^0.3.24",
+    "puppeteer-core": "^24.17.1",
     "typescript": "5.9.2"
   }
 }

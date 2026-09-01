@@ -12,7 +12,7 @@ import HomeLedger from '../../components/HomeLedger.astro';
 
 Domstamp asks a typed adapter to capture accessible browser state, validates the resulting graph, applies bounded orchestration, and returns a driver-independent snapshot.
 
-It is intentionally split into three packages:
+It is intentionally split into four packages:
 
 <div class="package-table" role="region" aria-label="Domstamp package responsibilities" tabindex="0">
   <table>
@@ -27,8 +27,13 @@ It is intentionally split into three packages:
       </tr>
       <tr>
         <td data-label="Package"><code>@domstamp/playwright</code></td>
-        <td data-label="Owns">Playwright <code>Page</code> adapter and iterative browser walker</td>
-        <td data-label="Runtime dependencies"><code>playwright-core</code> peer</td>
+        <td data-label="Owns">Playwright adapter, ARIA perception capture, and pixel evidence</td>
+        <td data-label="Runtime dependencies"><code>playwright-core</code> peer and YAML parser</td>
+      </tr>
+      <tr>
+        <td data-label="Package"><code>@domstamp/puppeteer</code></td>
+        <td data-label="Owns">Puppeteer adapter for DOM, frames, layout, and interaction</td>
+        <td data-label="Runtime dependencies"><code>puppeteer-core</code> peer and shared preview walker</td>
       </tr>
       <tr>
         <td data-label="Package"><code>@domstamp/tq1</code></td>
@@ -40,5 +45,5 @@ It is intentionally split into three packages:
 </div>
 
 :::caution[Preview contract]
-Version `0.1.0` is suitable for evaluation, but the schema compatibility window is not frozen for 1.0. Read [Release status](/operations/release-status/) before treating stored snapshots as a permanent interchange format.
+Version `0.2.0` is suitable for evaluation. Schema 2 can explicitly migrate stored schema-1 snapshots, but the long-term 1.0 compatibility window is not frozen. Read [Release status](/operations/release-status/) before treating preview snapshots as a permanent interchange format.
 :::

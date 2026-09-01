@@ -1,7 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import {
   createDomstamp,
   DomstampError,
+  inspectSnapshotCompatibility,
+  migrateSnapshot,
+  runAdapterConformance,
+  SNAPSHOT_SCHEMA_VERSION,
   type AdapterCapability,
   type DomSnapshot,
   type DomstampAdapter,
@@ -23,7 +28,7 @@ const allDefaultCapabilities = new Set<AdapterCapability>([
 function snapshot(status: 'stable' | 'unstable' = 'stable'): DomSnapshot {
   return {
     format: 'domstamp',
-    schemaVersion: 1,
+    schemaVersion: 2,
     viewport: { width: 1280, height: 720 },
     pointer: null,
     framesTruncated: false,
@@ -56,7 +61,9 @@ function snapshot(status: 'stable' | 'unstable' = 'stable'): DomSnapshot {
         rect: null,
         style: {}
       }]
-    }]
+    }],
+    accessibility: [],
+    attachments: []
   };
 }
 
@@ -72,6 +79,101 @@ function fakeAdapter(
 }
 
 test.describe('@conformance @core public TypeScript contract', () => {
+  test('schema v1 fixtures migrate explicitly to the current stable shape', () => {
+    const legacy = JSON.parse(readFileSync(
+      new URL('./fixtures/schema/v1-minimal.json', import.meta.url),
+      'utf8'
+    )) as unknown;
+
+    expect(inspectSnapshotCompatibility(legacy)).toEqual({
+      format: 'domstamp',
+      schemaVersion: 1,
+      currentVersion: SNAPSHOT_SCHEMA_VERSION,
+      readable: true,
+      migrationRequired: true
+    });
+    expect(migrateSnapshot(legacy)).toEqual({
+      ...(legacy as Record<string, unknown>),
+      schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      accessibility: [],
+      attachments: []
+    });
+    expect(() => migrateSnapshot({ ...(legacy as Record<string, unknown>), schemaVersion: 99 })).toThrowError(
+      expect.objectContaining({ code: 'UNSUPPORTED_SCHEMA' })
+    );
+    expect(() => migrateSnapshot({ format: 'domstamp', schemaVersion: SNAPSHOT_SCHEMA_VERSION }))
+      .toThrowError(expect.objectContaining({ code: 'INVALID_SNAPSHOT' }));
+  });
+
+  test('first-party redaction removes secrets without requiring adapter support or breaking graphs', async () => {
+    const secret = 'sentinel-secret-314159';
+    const captured: DomSnapshot = {
+      ...snapshot(),
+      documents: [{
+        ...snapshot().documents[0]!,
+        url: `https://example.test/?token=${secret}`,
+        origin: 'https://example.test',
+        title: `Account ${secret}`,
+        nodes: [{
+          ...snapshot().documents[0]!.nodes[0]!,
+          attributes: [['id', 'secret-source'], ['data-token', secret]],
+          references: [{ kind: 'aria-describedby', value: 'secret-source', target: 0 }],
+          state: { value: secret, note: `prefix-${secret}-suffix` },
+          style: { '--secret': secret }
+        }, {
+          id: 1,
+          parent: 0,
+          depth: 1,
+          path: '0/0',
+          kind: 'text',
+          name: '#text',
+          namespace: null,
+          value: secret,
+          attributes: [],
+          references: [],
+          state: {},
+          rect: null,
+          style: {}
+        }]
+      }],
+      accessibility: [{
+        frameId: 'frame-0',
+        root: 'ax-0',
+        source: 'native',
+        truncated: false,
+        nodes: [{
+          id: 'ax-0',
+          parent: null,
+          role: 'textbox',
+          name: `Name ${secret}`,
+          description: secret,
+          value: secret,
+          states: { autocomplete: secret },
+          domPath: '0'
+        }]
+      }]
+    };
+    const client = createDomstamp(fakeAdapter(async () => captured), {
+      defaults: {
+        data: {
+          mode: 'redact',
+          text: [secret],
+          attributes: ['data-token'],
+          replacement: '[MASKED]'
+        }
+      }
+    });
+
+    const result = await client.captureDetailed('target');
+    expect(JSON.stringify(result.snapshot)).not.toContain(secret);
+    expect(result.snapshot.documents[0]!.nodes[0]!.references[0]).toEqual({
+      kind: 'aria-describedby', value: 'secret-source', target: 0
+    });
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({
+      level: 'info', code: 'REDACTION_APPLIED'
+    }));
+  });
+
   test('configuration is typed, merged immutably, and passed to a generic adapter', async () => {
     let received: unknown;
     const client = createDomstamp(fakeAdapter(async (_target, context) => {
@@ -96,6 +198,22 @@ test.describe('@conformance @core public TypeScript contract', () => {
     expect(Object.isFrozen(received)).toBe(true);
     expect(Object.isFrozen((received as { features: object }).features)).toBe(true);
     expect(client.adapter.name).toBe('fake');
+  });
+
+  test('the public adapter conformance kit is driver-neutral and deterministic', async () => {
+    let disposed = false;
+    const report = await runAdapterConformance(fakeAdapter(), {
+      createTarget: () => 'framework-owned-target',
+      disposeTarget: () => { disposed = true; }
+    });
+    expect(report).toMatchObject({
+      adapter: { name: 'fake', version: '1.0.0' },
+      deterministic: true,
+      documentCount: 1,
+      nodeCount: 1
+    });
+    expect(report.capabilities).toContain('dom');
+    expect(disposed).toBe(true);
   });
 
   test('unsupported features fail before the adapter is invoked', async () => {

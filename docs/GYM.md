@@ -4,7 +4,7 @@
 
 The gym answers one question: **can a snapshot reconstruct the browser state that mattered to an automation agent at the instant of capture?**
 
-It is framework-neutral at the snapshot boundary. Playwright is the first driver because it provides repeatable control over Chromium, Firefox, WebKit, frames, input, network interception, traces, and browser contexts. Selenium and WebDriver BiDi adapters can later run the same scenario and oracle protocol.
+It is framework-neutral at the snapshot boundary. Playwright provides repeatable control over Chromium, Firefox, WebKit, frames, input, network interception, traces, and browser contexts. Puppeteer now exercises the same DOM snapshot contract on Chromium. Selenium and WebDriver BiDi adapters can adopt the same scenario, oracle, and conformance protocol later.
 
 ## Rigor model
 
@@ -47,6 +47,10 @@ A pixel image is evidence, but it is not a portable semantic oracle. Font raster
 - Virtualization: replacement windows with observable mutation epochs
 - Deterministic chaos: mixed DOM, input, frame, Shadow DOM, scroll, mutation, and network faults with replay and shrinking
 - Codec: dictionary-backed TQ1 structure, gzip transport, and exact round trips
+- Accessibility and pixels: per-frame ARIA perception graphs plus hashed and maskable screenshot evidence
+- Privacy: structural sentinel redaction and pixel-mask invariants
+- Driver parity: a real Puppeteer-controlled Chromium session on the shared snapshot contract
+- Boundary pressure: generated content, canvas, closed roots, frame churn, hostile hooks, wide DOMs, and repeated sessions
 
 ## Required expansion matrix
 

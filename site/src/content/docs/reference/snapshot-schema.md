@@ -1,6 +1,6 @@
 ---
 title: Snapshot schema
-description: Version 1 document, node, relationship, interaction, and consistency fields.
+description: Version 2 DOM, accessibility, attachment, relationship, interaction, and migration fields.
 ---
 
 Every snapshot carries both a format identifier and schema version.
@@ -8,11 +8,13 @@ Every snapshot carries both a format identifier and schema version.
 ```ts
 interface DomSnapshot {
   readonly format: 'domstamp';
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly viewport: { width: number; height: number } | null;
   readonly pointer: { x: number; y: number; type: string; buttons: number } | null;
   readonly framesTruncated: boolean;
   readonly documents: readonly DocumentSnapshot[];
+  readonly accessibility: readonly AccessibilityTree[];
+  readonly attachments: readonly SnapshotAttachment[];
 }
 ```
 
@@ -84,6 +86,18 @@ interface NodeReference {
 
 `state` may include live values that attributes alone cannot represent: current input values, checked and indeterminate state, selected options, text-control selections, `details.open`, content-editable state, tab index, and element scroll offsets.
 
+Canvas elements record their runtime bitmap dimensions and the explicit marker `canvasBitmap: 'pixel-layer-required'`. CSS-generated `::before` and `::after` content is recorded when a same-origin stylesheet exposes a matching rule. Actual canvas, WebGL, media, clipping, and compositing output belongs to the optional pixel attachment.
+
+## Accessibility trees
+
+Each requested tree is linked by `frameId`. Nodes contain a capture-local string ID, parent ID, role, accessible name, description, value, states, and an optional DOM path when the driver can correlate it. `source` distinguishes cross-browser `aria-snapshot` evidence from a future native tree.
+
+## Attachments
+
+Schema 2 defines screenshot attachments with an ID, frame link, PNG or JPEG media type, base64 data, byte length, SHA-256, width, and height. Attachment hashes verify bytes; they are not cross-environment visual-equality promises.
+
 ## Compatibility
 
-Schema version 1 is a preview contract. Consumers must reject unknown versions. The project has not yet committed to a 1.0 migration or compatibility window.
+The current reader accepts schema 1 and 2. Use `inspectSnapshotCompatibility(value)` before loading stored data and `migrateSnapshot(value)` to explicitly convert schema 1 to schema 2. Migration validates the complete resulting graph, adds empty accessibility and attachment arrays, and never fabricates evidence that an older capture did not contain.
+
+Unknown versions fail with `UNSUPPORTED_SCHEMA`. Historical JSON fixtures in the conformance suite prevent accidental removal of the supported migration path. The project has not yet committed to the duration of the post-1.0 compatibility window.

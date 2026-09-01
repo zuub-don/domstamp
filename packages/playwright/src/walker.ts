@@ -1,5 +1,7 @@
 import type { CaptureMode, DocumentSnapshot, DomSnapshot, SnapshotNode } from 'domstamp';
 import type { Frame, Page } from 'playwright-core';
+import { captureAccessibilityTrees } from './accessibility.js';
+import { captureScreenshotAttachment, type PixelCaptureOptions } from './pixels.js';
 
 type MutableSnapshotNode = { -readonly [Key in keyof SnapshotNode]: SnapshotNode[Key] };
 
@@ -25,12 +27,32 @@ export interface CaptureOptions {
   focusSiblingCount?: number;
   focusIncludeReferences?: boolean;
   frames?: false | { crossOrigin: boolean; maxFrames: number };
+  captureAccessibility?: boolean;
+  pixels?: Omit<PixelCaptureOptions, 'signal'>;
+  signal?: AbortSignal;
 }
 
 interface FrameMetadata {
   frameId: string;
   parentFrameId: string | null;
   ownerPath: string | null;
+}
+
+function isFrameDetached(frame: Frame): boolean {
+  const candidate = frame as Frame & { readonly detached?: boolean; isDetached?: () => boolean };
+  return typeof candidate.isDetached === 'function' ? candidate.isDetached() : candidate.detached === true;
+}
+
+function pageViewport(page: Page): { width: number; height: number } | null {
+  const candidate = page as Page & {
+    viewportSize?: () => { width: number; height: number } | null;
+    viewport?: () => { width: number; height: number } | null;
+  };
+  return typeof candidate.viewportSize === 'function'
+    ? candidate.viewportSize()
+    : typeof candidate.viewport === 'function'
+      ? candidate.viewport()
+      : null;
 }
 
 const DEFAULT_MAX_NODES = 100_000;
@@ -45,10 +67,10 @@ async function captureDocument(
   try {
     await frame.evaluate(() => {
       const scope = window as typeof window & {
-        __DOMSTAMP_MUTATION_STATE_V1__?: { epoch: number; observer: MutationObserver };
+        __DOMSTAMP_MUTATION_STATE_V1__?: { epoch: number; installations: number; observer: MutationObserver };
       };
       if (!scope.__DOMSTAMP_MUTATION_STATE_V1__) {
-        const state = { epoch: 0, observer: null as unknown as MutationObserver };
+        const state = { epoch: 0, installations: 1, observer: null as unknown as MutationObserver };
         state.observer = new MutationObserver((records) => { state.epoch += records.length; });
         state.observer.observe(document, {
           subtree: true,
@@ -85,11 +107,22 @@ async function captureDocument(
         return root instanceof ShadowRoot ? root.host : null;
       };
 
-      const childrenOf = (node: Node): Node[] => {
+      const childrenOf = (node: Node, limit = maxNodes): Node[] => {
         const children: Node[] = [];
-        if (includeShadowRoots && node instanceof Element && node.shadowRoot) children.push(node.shadowRoot);
-        if (includeTemplates && node instanceof HTMLTemplateElement) children.push(node.content);
-        children.push(...Array.from(node.childNodes).filter((child) => includeComments || !(child instanceof Comment)));
+        const append = (child: Node): boolean => {
+          if (children.length >= limit) {
+            nodesTruncated = true;
+            return false;
+          }
+          children.push(child);
+          return true;
+        };
+        if (includeShadowRoots && node instanceof Element && node.shadowRoot && !append(node.shadowRoot)) return children;
+        if (includeTemplates && node instanceof HTMLTemplateElement && !append(node.content)) return children;
+        for (let child = node.firstChild; child; child = child.nextSibling) {
+          if (!includeComments && child instanceof Comment) continue;
+          if (!append(child)) break;
+        }
         return children;
       };
 
@@ -116,7 +149,7 @@ async function captureDocument(
           if (included.has(current)) continue;
           included.add(current);
           count += 1;
-          const children = childrenOf(current);
+          const children = childrenOf(current, Math.max(0, limit - count));
           for (let index = children.length - 1; index >= 0; index -= 1) pending.push(children[index]!);
         }
         if (pending.length) nodesTruncated = true;
@@ -189,6 +222,30 @@ async function captureDocument(
 
       const included = captureMode === 'focus' ? focusSet() : captureMode === 'viewport' ? viewportSet() : null;
 
+      const pseudoSelectors: Array<{ selector: string; pseudo: '::before' | '::after' }> = [];
+      if (captureStyles) {
+        const pendingRuleLists: CSSRuleList[] = [];
+        for (const sheet of Array.from(document.styleSheets)) {
+          try { pendingRuleLists.push(sheet.cssRules); } catch { /* cross-origin stylesheet */ }
+        }
+        while (pendingRuleLists.length > 0 && pseudoSelectors.length < maxNodes) {
+          const rules = pendingRuleLists.pop()!;
+          for (let index = 0; index < rules.length && pseudoSelectors.length < maxNodes; index += 1) {
+            const rule = rules[index]!;
+            if (rule instanceof CSSStyleRule) {
+              for (const selector of rule.selectorText.split(',')) {
+                const match = selector.trim().match(/^(.*?)(::before|::after)$/);
+                if (match?.[1] && (match[2] === '::before' || match[2] === '::after')) {
+                  pseudoSelectors.push({ selector: match[1].trim(), pseudo: match[2] });
+                }
+              }
+            } else if ('cssRules' in rule) {
+              try { pendingRuleLists.push((rule as CSSGroupingRule).cssRules); } catch { /* inaccessible rule group */ }
+            }
+          }
+        }
+      }
+
       const runtimeState = (element: Element): MutableSnapshotNode['state'] => {
         const state: Record<string, boolean | number | string | null> = {};
         if (captureFormState && element instanceof HTMLInputElement) {
@@ -216,6 +273,20 @@ async function captureDocument(
           if (captureScroll) {
             state.scrollLeft = element.scrollLeft;
             state.scrollTop = element.scrollTop;
+          }
+        }
+        if (element instanceof HTMLCanvasElement) {
+          state.canvasWidth = element.width;
+          state.canvasHeight = element.height;
+          state.canvasBitmap = 'pixel-layer-required';
+        }
+        if (captureStyles && pseudoSelectors.length > 0) {
+          for (const { selector, pseudo } of pseudoSelectors) {
+            let matches = false;
+            try { matches = element.matches(selector); } catch { /* malformed or unsupported selector */ }
+            if (!matches) continue;
+            const content = getComputedStyle(element, pseudo).content;
+            if (content && content !== 'none' && content !== 'normal') state[`${pseudo}.content`] = content;
           }
         }
         return state;
@@ -309,7 +380,7 @@ async function captureDocument(
           style
         });
 
-        const children = childrenOf(current.node);
+        const children = childrenOf(current.node, Math.max(0, maxNodes - nodes.length));
         if (children.length && current.depth >= maxDepth) {
           depthTruncated = true;
           continue;
@@ -413,7 +484,7 @@ async function captureDocument(
       activeNode: null,
       selection: null,
       scroll: { x: 0, y: 0 },
-      consistency: { status: frame.isDetached() ? 'detached' : 'error', epochStart: null, epochEnd: null },
+      consistency: { status: isFrameDetached(frame) ? 'detached' : 'error', epochStart: null, epochEnd: null },
       truncated: { nodes: false, depth: false },
       nodes: [{
         id: 0,
@@ -493,13 +564,29 @@ export async function capturePlaywrightSnapshot(page: Page, options: CaptureOpti
     }).__GYM__;
     return gym?.pointer ?? null;
   });
+  const accessibility = options.captureAccessibility
+    ? await captureAccessibilityTrees(
+        frames.map(({ frame, metadata }) => ({ frame, frameId: metadata.frameId })),
+        options.maxNodesPerFrame ?? DEFAULT_MAX_NODES,
+        options.signal
+      )
+    : [];
+  const attachments = options.pixels
+    ? [await captureScreenshotAttachment(
+        page,
+        frames.map(({ frame }) => frame),
+        { ...options.pixels, ...(options.signal === undefined ? {} : { signal: options.signal }) }
+      )]
+    : [];
 
   return {
     format: 'domstamp',
-    schemaVersion: 1,
-    viewport: page.viewportSize(),
+    schemaVersion: 2,
+    viewport: pageViewport(page),
     pointer,
     framesTruncated,
-    documents
+    documents,
+    accessibility,
+    attachments
   };
 }

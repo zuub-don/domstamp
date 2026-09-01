@@ -1,5 +1,7 @@
 export const SNAPSHOT_FORMAT = 'domstamp' as const;
-export const SNAPSHOT_SCHEMA_VERSION = 1 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 2 as const;
+export const LEGACY_SNAPSHOT_SCHEMA_VERSION = 1 as const;
+export const SUPPORTED_SNAPSHOT_SCHEMA_VERSIONS = Object.freeze([1, 2] as const);
 
 export type CaptureMode = 'document' | 'viewport' | 'focus';
 
@@ -54,6 +56,50 @@ export interface DocumentSnapshot {
   readonly nodes: readonly SnapshotNode[];
 }
 
+export type AccessibilityStateValue = boolean | number | string | null;
+
+export interface AccessibilityNode {
+  readonly id: string;
+  readonly parent: string | null;
+  readonly role: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly value: string | null;
+  readonly states: Readonly<Record<string, AccessibilityStateValue>>;
+  /** Stable DOM path when the driver can correlate the accessibility node. */
+  readonly domPath: string | null;
+}
+
+export interface AccessibilityTree {
+  readonly frameId: string;
+  readonly root: string | null;
+  readonly source: 'aria-snapshot' | 'native';
+  readonly truncated: boolean;
+  readonly nodes: readonly AccessibilityNode[];
+}
+
+export interface SnapshotAttachment {
+  readonly id: string;
+  readonly kind: 'screenshot';
+  readonly frameId: string | null;
+  readonly mediaType: 'image/jpeg' | 'image/png';
+  readonly encoding: 'base64';
+  readonly data: string;
+  readonly byteLength: number;
+  readonly sha256: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface DomSnapshotV1 {
+  readonly format: typeof SNAPSHOT_FORMAT;
+  readonly schemaVersion: typeof LEGACY_SNAPSHOT_SCHEMA_VERSION;
+  readonly viewport: Readonly<{ width: number; height: number }> | null;
+  readonly pointer: Readonly<{ x: number; y: number; type: string; buttons: number }> | null;
+  readonly framesTruncated: boolean;
+  readonly documents: readonly DocumentSnapshot[];
+}
+
 export interface DomSnapshot {
   readonly format: typeof SNAPSHOT_FORMAT;
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;
@@ -61,4 +107,8 @@ export interface DomSnapshot {
   readonly pointer: Readonly<{ x: number; y: number; type: string; buttons: number }> | null;
   readonly framesTruncated: boolean;
   readonly documents: readonly DocumentSnapshot[];
+  readonly accessibility: readonly AccessibilityTree[];
+  readonly attachments: readonly SnapshotAttachment[];
 }
+
+export type SupportedDomSnapshot = DomSnapshotV1 | DomSnapshot;

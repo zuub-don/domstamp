@@ -4,7 +4,7 @@ Review date: 2026-08-31
 
 ## Executive assessment
 
-The original repository contained a strong conformance gym but no publishable library boundary. The architecture now has a framework-neutral core, optional Playwright adapter, optional TQ1 codec, versioned snapshot schema, capability negotiation, immutable layered configuration, cancellation, consistency retries, plugins, and public-package builds.
+The original repository contained a strong conformance gym but no publishable library boundary. The architecture now has a framework-neutral core, Playwright and Puppeteer adapters, an optional TQ1 codec, a versioned snapshot schema with explicit migration, structural redaction, capability negotiation, immutable layered configuration, cancellation, consistency retries, plugins, and public-package builds.
 
 The design is suitable for a public source preview. The npm packages should wait until the P0 package-release items below are resolved, and it is not yet appropriate to promise a stable `1.0` schema.
 
@@ -19,9 +19,9 @@ The design is suitable for a public source preview. The npm packages should wait
 | Snapshot integrity | strong | schema, frame, node, parent, reference, active-node, and byte validation |
 | Playwright implementation | good | iterative bounded walk, focus/viewport/document scopes, Shadow DOM and frame graph |
 | Encoding security | good | gzip expansion limit, structural limits, cycle/non-finite rejection, safe prototype keys |
-| Cross-driver ecosystem | incomplete | only Playwright adapter exists today |
-| Accessibility/pixels | incomplete | modeled and safely rejected by Playwright; native capture is not implemented |
-| Schema evolution | incomplete | version exists; migrations and compatibility window are not defined |
+| Cross-driver ecosystem | good | Playwright and a real Puppeteer session exercise the same contract; the shared walker should become driver-neutral before 1.0 |
+| Accessibility/pixels | good | Playwright emits ARIA perception trees and hashed screenshots; native OS trees remain outside the current promise |
+| Schema evolution | good | schema 1 migrates explicitly to schema 2 with a historical fixture; the compatibility duration remains undecided |
 | Release operations | partial | Canonical metadata and CI gates are defined; npm ownership, required checks, protected publishing, and support policy remain external |
 
 ## P0 — resolve before publishing
@@ -33,13 +33,11 @@ The design is suitable for a public source preview. The npm packages should wait
 
 ## P1 — required for a high-confidence 1.0
 
-1. Implement redaction in a dedicated transform or adapter and test that references remain valid after redaction.
-2. Add native accessibility-tree and pixel-layer capture, or keep both outside the first stable capability set.
-3. Add million-node, long-session, memory-ceiling, and capture-latency gates with published benchmark hardware.
-4. Add schema fixtures from old versions and forward/backward compatibility tests.
-5. Add WebDriver BiDi or Selenium as the second adapter to prove the abstraction is real rather than Playwright-shaped.
-6. Decide whether TQ1 remains Node-only or gains a browser/edge compression transport.
-7. Define behavior for closed Shadow DOM, pseudo-elements, canvas/WebGL, BFCache, detached OOPIFs, service workers, and hostile prototype modification.
+1. Publish repeatable peak-memory and capture-latency results for the configurable million-node profile on named hardware. The maximum-width scenario has completed locally, but that single result is not a portable benchmark.
+2. Extract the shared DOM walker into a driver-neutral internal package so Puppeteer does not depend on the Playwright package boundary.
+3. Decide whether TQ1 remains Node-only or gains a browser/edge compression transport.
+4. Define and test the remaining BFCache, service-worker, WebSocket/SSE, IME, touch/pen, drag/drop, video, and WebGL cases.
+5. Decide whether 1.0 promises a native OS accessibility source or the current cross-browser ARIA perception layer.
 
 ## P2 — ecosystem polish
 
@@ -66,5 +64,5 @@ The design is suitable for a public source preview. The npm packages should wait
 ## Explicit non-claims
 
 - “Lossless” currently applies to the fields and accessible boundaries declared by the schema, not inaccessible closed roots, browser chrome, GPU state, or arbitrary JavaScript heap state.
-- Cross-framework means application-framework independence today. Cross-driver support is architecturally enabled but not yet demonstrated beyond Playwright.
-- The reference schema is versioned but not frozen for 1.0.
+- Cross-framework means application-framework independence. Cross-driver DOM capture is demonstrated with Playwright and Puppeteer; optional accessibility and pixel evidence remain Playwright-only.
+- Schema 2 explicitly migrates schema 1, but the duration of the compatibility window is not frozen for 1.0.

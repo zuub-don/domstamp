@@ -15,7 +15,13 @@ A lossless snapshot may contain:
 - URLs, origins, titles, and frame names;
 - interaction state that reveals what a user was doing.
 
-Do not export, log, or attach snapshots to model requests without an explicit data policy. The current Playwright adapter does not ship production redaction.
+Do not export, log, or attach snapshots to model requests without an explicit data policy. Domstamp ships trusted structural redaction and Playwright pixel masks, but the caller still owns policy completeness: a value not named by the policy remains lossless.
+
+## Redaction boundary
+
+Core redaction runs after adapter output is structurally validated and before consumer plugins. It uses literal matching rather than attacker-controlled regular expressions, preserves node and frame IDs, and revalidates the transformed graph. Runtime input values are redacted by default in redaction mode.
+
+Pixels are a separate leak surface. When screenshot capture and redaction are both enabled, Domstamp refuses to run without at least one pixel-mask selector. Mask all regions that can render sensitive values, including canvas or cross-frame surfaces; structural redaction cannot alter already-rasterized pixels.
 
 ## Hostile-page threat model
 
@@ -45,6 +51,7 @@ The decoder applies compressed and expanded byte ceilings plus depth, string-tab
 - Keep frame, node, depth, byte, and time budgets finite.
 - Treat artifacts, traces, screenshots, and TQ1 files as sensitive.
 - Apply and test a complete redaction layer before data leaves its trust boundary.
+- Prefer sentinel-secret tests that scan serialized snapshots and compare masked screenshots before and after the secret changes.
 - Pin package and browser versions in CI.
 
 ## Reporting vulnerabilities

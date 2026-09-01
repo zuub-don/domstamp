@@ -39,7 +39,8 @@ export default defineConfig({
           { label: 'Install and capture', slug: 'guides/getting-started' },
           { label: 'Choose a capture scope', slug: 'guides/capture-scopes' },
           { label: 'Frames and Shadow DOM', slug: 'guides/frames-and-shadow-dom' },
-          { label: 'Handle unstable pages', slug: 'guides/consistency' }
+          { label: 'Handle unstable pages', slug: 'guides/consistency' },
+          { label: 'Redact sensitive captures', slug: 'guides/redaction' }
         ] },
         { label: 'Extend', items: [
           { label: 'Author an adapter', slug: 'extend/adapters' },
@@ -51,6 +52,7 @@ export default defineConfig({
           { label: 'Snapshot schema', slug: 'reference/snapshot-schema' },
           { label: 'Errors and diagnostics', slug: 'reference/errors' },
           { label: 'Playwright adapter', slug: 'reference/playwright' },
+          { label: 'Puppeteer adapter', slug: 'reference/puppeteer' },
           { label: 'TQ1 codec', slug: 'reference/tq1' }
         ] },
         { label: 'Operate', items: [

@@ -1,0 +1,26 @@
+name: Scale profile
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  million-node-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+      - run: mkdir -p artifacts
+      - name: Run bounded million-node profile
+        run: GYM_UID=$(id -u) GYM_GID=$(id -g) docker compose run --rm -e DOMSTAMP_SCALE_NODES=1000000 runner npm run test:chromium -- --grep "wide documents"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: million-node-profile
+          path: artifacts
+          if-no-files-found: ignore

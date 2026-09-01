@@ -10,7 +10,7 @@ Treat pages and encoded snapshots as untrusted input. A captured page may attemp
 
 The implementation provides traversal budgets, frame budgets, byte ceilings, timeouts, abort signals, snapshot referential validation, gzip output limits, structural decode limits, and safe definition of hostile object keys. These controls reduce risk but do not make it safe to capture arbitrary hostile websites inside a privileged browser profile.
 
-Use an isolated browser context and container, avoid ambient credentials, configure the smallest required capture surface, and apply an explicit redaction policy before exporting artifacts outside the trust boundary.
+Use an isolated browser context and container, avoid ambient credentials, and configure the smallest required capture surface. Trusted structural redaction runs before consumer plugins, while Playwright screenshot redaction requires explicit pixel masks. Test both layers with sentinel secrets before exporting artifacts outside the trust boundary.
 
 ## Supported versions
 

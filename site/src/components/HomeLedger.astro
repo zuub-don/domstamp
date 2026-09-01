@@ -1,8 +1,8 @@
 <div class="ledger-home">
   <div class="release-strip" aria-label="Current project status">
-    <span><strong>0.1.0</strong> preview</span>
-    <span><strong>Schema</strong> 1</span>
-    <span><strong>Matrix</strong> 84 passing</span>
+    <span><strong>0.2.0</strong> preview</span>
+    <span><strong>Schema</strong> 2</span>
+    <span><strong>Drivers</strong> Playwright + Puppeteer</span>
   </div>
 
   <p class="ledger-lead">Capture the browser state an automation agent can perceive—DOM, frames, interaction, geometry, and consistency—in one bounded, validated snapshot.</p>
@@ -21,7 +21,7 @@
       <li><b>Target</b><span>Page or driver session</span></li>
       <li><b>Adapter</b><span>Accessible browser state</span></li>
       <li><b>Core</b><span>Validate, retry, transform</span></li>
-      <li><b>Snapshot</b><span>Schema 1 or TQ1</span></li>
+      <li><b>Snapshot</b><span>Schema 2 or TQ1</span></li>
     </ol>
   </section>
 
@@ -46,14 +46,15 @@
 
   <section class="capability-ledger" aria-labelledby="capabilities-heading">
     <div class="section-heading">
-      <h2 id="capabilities-heading">Playwright capability ledger</h2>
+      <h2 id="capabilities-heading">Capture capability ledger</h2>
       <p>Boundaries are declared before capture, never hidden afterward.</p>
     </div>
     <div class="capability-rows">
       <div><span class="status-mark supported">Supported</span><b>DOM · open Shadow DOM · templates</b></div>
       <div><span class="status-mark supported">Supported</span><b>Same- and cross-origin frames</b></div>
-      <div><span class="status-mark unavailable">Unavailable</span><b>Closed Shadow DOM · native accessibility tree</b></div>
-      <div><span class="status-mark unavailable">Unavailable</span><b>Pixels · built-in redaction</b></div>
+      <div><span class="status-mark supported">Supported</span><b>ARIA perception trees · masked pixel evidence</b></div>
+      <div><span class="status-mark supported">Supported</span><b>Trusted structural redaction</b></div>
+      <div><span class="status-mark unavailable">Unavailable</span><b>Closed Shadow DOM · browser chrome · JavaScript heap</b></div>
     </div>
   </section>
 </div>

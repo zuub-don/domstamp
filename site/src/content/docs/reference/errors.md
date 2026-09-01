@@ -11,6 +11,7 @@ Expected library failures are `DomstampError` instances with stable codes.
 | `TIMEOUT` | `limits.timeoutMs` expired | Reduce scope or raise a justified deadline |
 | `INVALID_CONFIG` | Settings are structurally or numerically invalid | Correct configuration before retrying |
 | `UNSUPPORTED_CAPABILITY` | Adapter cannot satisfy the resolved request | Disable the feature or select another adapter |
+| `UNSUPPORTED_SCHEMA` | Stored snapshot version has no supported migration path | Upgrade the reader or use a supported historical format |
 | `INVALID_SNAPSHOT` | Adapter or plugin returned malformed or over-budget output | Treat as an integration defect |
 | `PLUGIN_FAILED` | A named plugin hook failed | Inspect `details.plugin` and `details.hook` |
 | `CAPTURE_FAILED` | Adapter threw an unexpected failure | Inspect `cause` and adapter metadata |
@@ -41,7 +42,7 @@ Do not parse error messages. They are explanatory text, not a stable machine con
 
 ## Diagnostics
 
-`captureDetailed()` returns non-fatal diagnostics alongside the snapshot. The current core emits `UNSTABLE_CAPTURE` when all configured consistency attempts still contain an unstable document.
+`captureDetailed()` returns non-fatal diagnostics alongside the snapshot. The core emits `UNSTABLE_CAPTURE` when all configured consistency attempts still contain an unstable document and `REDACTION_APPLIED` after trusted structural redaction, including the replacement count.
 
 ```ts
 interface CaptureDiagnostic {

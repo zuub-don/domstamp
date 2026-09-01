@@ -13,6 +13,11 @@ export const scenarioNames = [
   'dom-extremes',
   'deep-tree',
   'virtualized-list',
+  'sensitive-data',
+  'rendering-boundaries',
+  'frame-churn',
+  'hostile-prototypes',
+  'scale-wide',
   'chaos-laboratory'
 ];
 
@@ -91,6 +96,18 @@ const scenarios = {
       input.setSelectionRange(2, 7, 'forward');
       document.querySelector('#enabled').indeterminate = true;
       document.querySelector('#notes').value = 'runtime notes ${seed}';
+    `),
+
+  'sensitive-data': ({ seed }) => shell('sensitive-data', seed, `
+    <section class="secret-zone" data-token="sentinel-${seed}">
+      <label for="credential">Credential sentinel-${seed}</label>
+      <input id="credential" name="credential" value="markup-sentinel-${seed}">
+      <p id="secret-description">Visible sentinel-${seed}</p>
+    </section>
+    <p id="public-copy">Public stable copy</p>`, `
+      const input = document.querySelector('#credential');
+      input.value = 'runtime-sentinel-${seed}';
+      input.setAttribute('aria-describedby', 'secret-description');
     `),
 
   'shadow-dom': ({ seed }) => shell('shadow-dom', seed, `
@@ -199,6 +216,75 @@ const scenarios = {
         return window.__GYM__.ticks;
       };
       render();
+    `),
+
+  'rendering-boundaries': ({ seed }) => shell('rendering-boundaries', seed, `
+    <style>
+      #generated::before { content: "before-${seed}"; }
+      #generated::after { content: "after-${seed}"; }
+      #clipped { width: 80px; height: 32px; overflow: hidden; transform: rotate(.01deg); }
+    </style>
+    <section>
+      <p id="generated">Generated boundary</p>
+      <div id="clipped">Clipped visual content ${seed}</div>
+      <canvas id="bitmap" width="180" height="72" aria-label="Generated chart"></canvas>
+      <closed-widget id="closed-widget"></closed-widget>
+    </section>`, `
+      const canvas = document.querySelector('#bitmap');
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#173f5f';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#f6d55c';
+      context.font = '20px sans-serif';
+      context.fillText('pixel-${seed}', 18, 42);
+      const closed = document.querySelector('#closed-widget').attachShadow({ mode: 'closed' });
+      closed.innerHTML = '<button>inaccessible closed control</button>';
+    `),
+
+  'frame-churn': ({ seed }) => shell('frame-churn', seed, `
+    <section id="frame-churn-zone"><iframe id="churn-frame" title="churning frame" src="/frame/nested?seed=${seed}"></iframe></section>`, `
+      let enabled = false;
+      let frameNumber = 0;
+      const zone = document.querySelector('#frame-churn-zone');
+      const churn = () => {
+        if (!enabled) return;
+        const existing = document.querySelector('#churn-frame');
+        if (existing) existing.remove();
+        const frame = document.createElement('iframe');
+        frame.id = 'churn-frame';
+        frame.title = 'churning frame';
+        frame.src = '/frame/nested?seed=' + (${seed} + (++frameNumber));
+        zone.append(frame);
+        requestAnimationFrame(churn);
+      };
+      window.__GYM__.startFrameChurn = () => { enabled = true; requestAnimationFrame(churn); };
+      window.__GYM__.stopFrameChurn = () => { enabled = false; };
+    `),
+
+  'hostile-prototypes': ({ seed }) => shell('hostile-prototypes', seed, `
+    <section><button id="hostile-target">Hostile ${seed}</button></section>`, `
+      window.__GYM__.armHostility = () => {
+        Element.prototype.getBoundingClientRect = function () { throw new Error('hostile geometry trap'); };
+      };
+    `),
+
+  'scale-wide': ({ seed }) => shell('scale-wide', seed, `
+    <section><h2>Wide DOM pressure</h2><div id="scale-root"></div></section>`, `
+      const requested = Number(new URL(location.href).searchParams.get('nodes') || 25000);
+      const count = Math.max(1, Math.min(requested, 1000000));
+      const root = document.querySelector('#scale-root');
+      const batchSize = 5000;
+      for (let start = 0; start < count; start += batchSize) {
+        const fragment = document.createDocumentFragment();
+        for (let index = start; index < Math.min(start + batchSize, count); index += 1) {
+          const item = document.createElement('i');
+          item.dataset.scale = String(index);
+          item.textContent = index % 1000 === 0 ? 'milestone-${seed}-' + index : '';
+          fragment.append(item);
+        }
+        root.append(fragment);
+      }
+      document.body.dataset.nodeCount = String(count);
     `),
 
   'chaos-laboratory': ({ seed }) => shell('chaos-laboratory', seed, `

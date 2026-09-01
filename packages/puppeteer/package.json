@@ -1,0 +1,41 @@
+{
+  "name": "@domstamp/puppeteer",
+  "version": "0.2.0",
+  "description": "Puppeteer adapter for the framework-neutral Domstamp snapshot API.",
+  "keywords": [
+    "puppeteer",
+    "browser-automation",
+    "dom-snapshot",
+    "shadow-dom",
+    "iframe",
+    "ai-agents"
+  ],
+  "author": "Domstamp contributors",
+  "homepage": "https://zuub-don.github.io/domstamp/reference/puppeteer/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuub-don/domstamp.git",
+    "directory": "packages/puppeteer"
+  },
+  "bugs": { "url": "https://github.com/zuub-don/domstamp/issues" },
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": { "node": ">=20" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build",
+    "prepublishOnly": "node ../../scripts/check-versions.mjs"
+  },
+  "dependencies": {
+    "@domstamp/playwright": "^0.2.0",
+    "domstamp": "^0.2.0"
+  },
+  "peerDependencies": { "puppeteer-core": ">=24 <25" },
+  "publishConfig": { "access": "public", "provenance": true }
+}

@@ -28,13 +28,14 @@ Readers work in TypeScript projects, Playwright automation, CI environments, Doc
 
 ## Capabilities and Constraints
 
-- The current public packages are `domstamp`, `@domstamp/playwright`, and `@domstamp/tq1`.
+- The current public package set is `domstamp`, `@domstamp/playwright`, `@domstamp/puppeteer`, and `@domstamp/tq1`; npm publication is still pending.
 - The core is application-framework and browser-driver independent through generic adapters.
-- The Playwright adapter supports accessible DOM, open Shadow DOM, template contents, interaction state, and same- and cross-origin frames.
-- Closed Shadow DOM, native accessibility trees, pixels, and redaction are explicit unsupported capabilities in the current Playwright adapter.
+- The Playwright adapter supports accessible DOM, open Shadow DOM, template contents, interaction state, same- and cross-origin frames, ARIA perception trees, screenshots, and masked pixels.
+- The Puppeteer adapter proves cross-driver DOM capture but does not advertise accessibility or pixels.
+- Trusted structural redaction is implemented in the core. Closed Shadow DOM and native OS accessibility trees remain explicit unsupported boundaries.
 - Documentation must build statically for GitHub Pages and support repository subpaths.
 - Search must work without a hosted search service.
-- The schema is versioned but not frozen for 1.0.
+- Schema 2 explicitly migrates historical schema-1 snapshots, but the long-term compatibility window is not frozen for 1.0.
 
 ## Brand Commitments
 
@@ -42,7 +43,7 @@ The product name is Domstamp. Voice should be technically exact, candid about bo
 
 ## Evidence on Hand
 
-The repository contains the implementation, package READMEs, public API contract, security guidance, chaos methodology, Docker gym documentation, design review, conformance tests, and an 84-test three-browser validation matrix. No testimonials, customer logos, production adoption claims, or performance benchmarks exist and none may be fabricated.
+The repository contains the implementation, package READMEs, public API contract, security guidance, chaos methodology, Docker gym documentation, design review, conformance tests, a three-browser validation matrix, and a real Puppeteer adapter test. No testimonials, customer logos, production adoption claims, or published hardware benchmarks exist and none may be fabricated.
 
 ## Product Principles
 

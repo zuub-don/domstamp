@@ -76,10 +76,12 @@ accessibility: false | {
 pixels: false | {
   format: 'png' | 'jpeg';
   quality?: number;
+  fullPage: boolean;
+  scale: 'css' | 'device';
 }
 ```
 
-Default accessibility configuration is `{ relationships: true, tree: false }`. Pixels default to `false`. The Playwright adapter does not advertise accessibility-tree or pixel capabilities.
+Default accessibility configuration is `{ relationships: true, tree: false }`. Pixels default to `false`; enabling a partial pixel object fills `format: 'png'`, `fullPage: false`, and `scale: 'css'`. Playwright supports both optional layers. Puppeteer intentionally defaults both to `false` and does not advertise them.
 
 JPEG quality must be an integer from 0 through 100.
 
@@ -114,11 +116,18 @@ type DataPolicy =
       inputValues?: boolean;
       text?: readonly string[];
       attributes?: readonly string[];
+      urls?: boolean;
+      titles?: boolean;
+      accessibility?: boolean;
+      pixelMasks?: readonly string[];
+      pixelMaskColor?: string;
       replacement?: string;
     };
 ```
 
-Default: `{ mode: 'lossless' }`. Redaction requires an adapter or integration advertising `redaction`; the current Playwright adapter does not.
+Default: `{ mode: 'lossless' }`. Structural redaction is a trusted core transform and therefore does not require adapter support. It covers literal text needles, selected attributes, runtime input values, metadata, styles, references, and accessibility strings according to the policy.
+
+When pixels are enabled, redaction requires at least one `pixelMasks` selector and an adapter advertising `redaction`. Playwright resolves every selector in every captured frame and masks matching regions before screenshot bytes leave the page boundary.
 
 ## Playwright adapter settings
 

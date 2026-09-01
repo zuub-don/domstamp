@@ -1,8 +1,15 @@
 {
   "name": "@domstamp/playwright",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Playwright adapter for the framework-neutral Domstamp snapshot API.",
-  "keywords": ["playwright", "browser-automation", "dom-snapshot", "shadow-dom", "iframe", "ai-agents"],
+  "keywords": [
+    "playwright",
+    "browser-automation",
+    "dom-snapshot",
+    "shadow-dom",
+    "iframe",
+    "ai-agents"
+  ],
   "author": "Domstamp contributors",
   "homepage": "https://zuub-don.github.io/domstamp/reference/playwright/",
   "repository": {
@@ -10,16 +17,41 @@
     "url": "git+https://github.com/zuub-don/domstamp.git",
     "directory": "packages/playwright"
   },
-  "bugs": { "url": "https://github.com/zuub-don/domstamp/issues" },
+  "bugs": {
+    "url": "https://github.com/zuub-don/domstamp/issues"
+  },
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
-  "engines": { "node": ">=20" },
-  "files": ["dist", "README.md", "LICENSE"],
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "types": "./dist/index.d.ts",
-  "scripts": { "build": "tsc -b", "prepack": "npm run build" },
-  "dependencies": { "domstamp": "^0.1.0" },
-  "peerDependencies": { "playwright-core": ">=1.50.0 <2" },
-  "publishConfig": { "access": "public", "provenance": true }
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build",
+    "prepublishOnly": "node ../../scripts/check-versions.mjs"
+  },
+  "dependencies": {
+    "domstamp": "^0.2.0",
+    "yaml": "^2.9.0"
+  },
+  "peerDependencies": {
+    "playwright-core": ">=1.50.0 <2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

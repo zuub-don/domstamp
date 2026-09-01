@@ -8,19 +8,22 @@ export interface PlaywrightAdapterOptions {
 }
 
 const capabilities = [
+  'accessibility-tree',
   'cross-origin-frames',
   'dom',
   'frames',
   'interaction',
   'layout',
   'mutation-consistency',
-  'open-shadow-roots'
+  'open-shadow-roots',
+  'pixels',
+  'redaction'
 ] as const satisfies readonly AdapterCapability[];
 
 export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOptions> {
   return Object.freeze({
     name: '@domstamp/playwright',
-    version: '0.1.0',
+    version: '0.2.0',
     capabilities: new Set(capabilities),
     async capture(page: Page, { config, signal }: AdapterContext<PlaywrightAdapterOptions>): Promise<DomSnapshot> {
       if (signal.aborted) throw signal.reason;
@@ -28,6 +31,7 @@ export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOpti
       const layout = config.features.layout;
       const interaction = config.features.interaction;
       const frameOptions = config.features.frames;
+      const pixels = config.features.pixels;
       const configuredStyles = config.adapter?.computedStyleProperties;
       const styleSelection = layout === false ? [] : layout.computedStyles;
       const snapshot = await capturePlaywrightSnapshot(page, {
@@ -55,6 +59,19 @@ export function playwrightAdapter(): DomstampAdapter<Page, PlaywrightAdapterOpti
         viewportMargin: config.scope.mode === 'viewport' ? (config.scope.margin ?? 0) : 0,
         focusSiblingCount: config.scope.mode === 'focus' ? (config.scope.siblingCount ?? 1) : 1,
         focusIncludeReferences: config.scope.mode === 'focus' ? (config.scope.includeReferences ?? true) : true,
+        captureAccessibility: config.features.accessibility !== false && config.features.accessibility.tree,
+        ...(pixels === false ? {} : {
+          pixels: {
+            format: pixels.format,
+            ...(pixels.quality === undefined ? {} : { quality: pixels.quality }),
+            fullPage: pixels.fullPage,
+            scale: pixels.scale,
+            ...(config.data.mode === 'redact' && config.data.pixelMasks !== undefined
+              ? { maskSelectors: config.data.pixelMasks, maskColor: config.data.pixelMaskColor ?? '#000000' }
+              : {})
+          }
+        }),
+        signal,
         frames: frameOptions === false
           ? false
           : { crossOrigin: frameOptions.crossOrigin, maxFrames: frameOptions.maxFrames }

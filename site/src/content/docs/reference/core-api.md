@@ -64,7 +64,38 @@ function validateSnapshot(
 ): asserts snapshot is DomSnapshot;
 ```
 
-`validateSnapshot` checks schema identity, document and node metadata, parent graphs, reference closure, geometry, runtime state, serialization fields, and optional document/node/depth ceilings. It throws `INVALID_SNAPSHOT` on failure.
+`validateSnapshot` checks schema identity, document and node metadata, parent graphs, reference closure, accessibility graphs, attachment metadata, geometry, runtime state, serialization fields, and optional document/node/depth ceilings. It throws `INVALID_SNAPSHOT` on failure.
+
+## Compatibility and migration
+
+```ts
+function inspectSnapshotCompatibility(value: unknown): SnapshotCompatibility;
+function migrateSnapshot(value: unknown): DomSnapshot;
+```
+
+The compatibility inspector recognizes supported schema versions without claiming that the remaining graph is valid. `migrateSnapshot` validates current schema-2 data and explicitly migrates schema 1 by adding empty accessibility and attachment arrays before validating the complete result. Unknown versions throw `UNSUPPORTED_SCHEMA`.
+
+## Redaction
+
+```ts
+function redactSnapshot(
+  snapshot: DomSnapshot,
+  policy: Extract<DataPolicy, { mode: 'redact' }>
+): RedactionResult;
+```
+
+Most consumers should configure `data.mode: 'redact'` on the client instead of calling this function directly. The direct export exists for trusted integration layers and returns the transformed snapshot plus a replacement count.
+
+## Adapter conformance
+
+```ts
+function runAdapterConformance<TTarget, TAdapterOptions = unknown>(
+  adapter: DomstampAdapter<TTarget, TAdapterOptions>,
+  options: AdapterConformanceOptions<TTarget>
+): Promise<AdapterConformanceReport>;
+```
+
+This runner-independent smoke kit validates adapter metadata, the baseline DOM capability, two complete snapshots, and deterministic output for a quiescent fixture. The Docker gym remains the comprehensive browser-semantic suite.
 
 ## Errors
 

@@ -26,6 +26,13 @@ The runner uses the pinned Playwright image and tests Chromium, Firefox, and Web
 - Unicode graphemes, SVG, MathML, and template fragments;
 - a 320-level tree with explicit node/depth truncation;
 - deterministic mutation clocks and virtualized lists;
+- ARIA perception graphs and masked screenshot evidence;
+- structural secret redaction across DOM, metadata, and accessibility;
+- generated CSS content, canvas evidence, and closed-root non-claims;
+- detached frame churn and hostile page-prototype failure containment;
+- configurable wide documents up to 1,000,000 nodes;
+- repeated captures and navigation with observer-reuse assertions;
+- a real Puppeteer session against the same cross-origin fixtures;
 - seeded mixed-fault chaos.
 
 ## Test classes
@@ -47,4 +54,6 @@ Failed runs write Playwright reports and test artifacts under `artifacts/`. Chao
 
 The gym’s support layer calls the public `createDomstamp(adapter)` API. New adapters should provide the same public adapter interface and run against this suite rather than forking the assertions.
 
-Current verified result: **84 tests passing** across all three engines.
+The default matrix runs every applicable assertion in Chromium, Firefox, and WebKit. The Puppeteer adapter launches the pinned Chromium binary once; non-Chromium projects report that case as intentionally skipped.
+
+Set `DOMSTAMP_SCALE_NODES=1000000` to run the maximum wide-DOM pressure profile. Keep its timing and memory results tied to named CI hardware rather than treating them as universal performance claims.

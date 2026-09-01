@@ -13,7 +13,7 @@ const encoded = encodeTq1(snapshot);
 const decoded = decodeTq1(encoded);
 ```
 
-The decoder enforces configurable compressed, expanded, nesting, string-table, array, and object limits before returning untrusted data. Invalid gzip, tags, indices, duplicate keys, prototype-pollution keys, non-finite numbers, cycles, and unsupported versions fail with a stable `Tq1Error.code`.
+The decoder enforces configurable compressed, expanded, nesting, string-table, array, and object limits before returning untrusted data. Invalid gzip, tags, indices, duplicate keys, non-finite numbers, cycles, and unsupported versions fail with a stable `Tq1Error.code`. Keys such as `__proto__` are created as safe own data properties rather than assigned through an object's prototype setter.
 
 ```ts
 const decoded = decodeTq1(payload, {

@@ -1,0 +1,41 @@
+{
+  "format": "domstamp",
+  "schemaVersion": 1,
+  "viewport": { "width": 800, "height": 600 },
+  "pointer": null,
+  "framesTruncated": false,
+  "documents": [
+    {
+      "frameId": "frame-0",
+      "parentFrameId": null,
+      "ownerPath": null,
+      "url": "https://fixture.invalid/",
+      "origin": "https://fixture.invalid",
+      "title": "v1 historical fixture",
+      "frameName": "",
+      "mode": "document",
+      "activeNode": null,
+      "selection": null,
+      "scroll": { "x": 0, "y": 0 },
+      "consistency": { "status": "stable", "epochStart": 0, "epochEnd": 0 },
+      "truncated": { "nodes": false, "depth": false },
+      "nodes": [
+        {
+          "id": 0,
+          "parent": null,
+          "depth": 0,
+          "path": "0",
+          "kind": "element",
+          "name": "html",
+          "namespace": "http://www.w3.org/1999/xhtml",
+          "value": null,
+          "attributes": [],
+          "references": [],
+          "state": {},
+          "rect": null,
+          "style": {}
+        }
+      ]
+    }
+  ]
+}

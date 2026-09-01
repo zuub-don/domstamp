@@ -14,6 +14,7 @@ COPY package.json package-lock.json* ./
 COPY packages/domstamp/package.json ./packages/domstamp/package.json
 COPY packages/tq1/package.json ./packages/tq1/package.json
 COPY packages/playwright/package.json ./packages/playwright/package.json
+COPY packages/puppeteer/package.json ./packages/puppeteer/package.json
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY playwright.config.ts tsconfig.json tsconfig.base.json ./
 COPY packages ./packages

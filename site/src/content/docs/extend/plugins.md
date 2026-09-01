@@ -18,7 +18,7 @@ interface DomstampPlugin<TTarget, TAdapterOptions = unknown> {
 ## Lifecycle
 
 ```text
-beforeCapture → adapter → schema validation → transform → validation → afterCapture
+beforeCapture → adapter → validation → structural redaction → transform → validation → afterCapture
 ```
 
 Plugins execute in declaration order. Every transformed snapshot is validated and byte-limited again.
@@ -49,8 +49,8 @@ A failing normal hook throws `PLUGIN_FAILED` with the plugin name and hook in `e
 
 `onError` cannot replace the original capture failure. Its own error is swallowed after the hook is bounded by the effective capture signal.
 
-## Redaction plugins
+## Redaction and plugins
 
-A transform can redact snapshot values, but a public redaction implementation must preserve graph validity and cover all sensitive fields deliberately. Do not claim secure redaction from a few regular-expression replacements.
+The trusted core redaction pass runs before plugin transforms. This prevents an ordinary consumer plugin from observing raw adapter output when redaction mode is enabled. A transform can perform additional policy-specific minimization, but it must preserve graph validity and is validated again afterward.
 
-The current Playwright adapter does not advertise the `redaction` capability, and the project does not yet ship a production redaction plugin.
+The Playwright adapter advertises `redaction` for masked pixel capture. Structural redaction is adapter-independent and does not require that capability. See [Redact sensitive captures](/guides/redaction/) for the complete data and pixel policy.

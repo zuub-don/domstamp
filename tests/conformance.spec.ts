@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
+import { createDomstamp } from 'domstamp';
+import { playwrightAdapter } from '@domstamp/playwright';
 import { loadAdapter } from './support/adapter.js';
 import { decodeTq1, encodeTq1 } from './support/tq1.js';
 
@@ -45,6 +47,65 @@ test.describe('@conformance snapshot contract', () => {
     expect(input?.state.selectionEnd).toBe(7);
     expect(input?.state.selectionDirection).toBe('forward');
     expect(checkbox?.state.indeterminate).toBe(true);
+  });
+
+  test('optional accessibility trees expose roles, names, values, and closed parent graphs', async ({ page }) => {
+    await page.goto('/scenario/focus-and-forms?seed=91');
+    const client = createDomstamp(playwrightAdapter(), {
+      defaults: { features: { accessibility: { relationships: true, tree: true } } }
+    });
+    const snapshot = await client.capture(page);
+
+    expect(snapshot.accessibility).toHaveLength(1);
+    const tree = snapshot.accessibility[0]!;
+    expect(tree.source).toBe('aria-snapshot');
+    expect(tree.nodes.some((node) => node.role === 'textbox' && node.name === 'Name')).toBe(true);
+    expect(tree.nodes.some((node) => node.role === 'button' && node.name === 'Submit')).toBe(true);
+    const ids = new Set(tree.nodes.map((node) => node.id));
+    for (const node of tree.nodes) {
+      if (node.parent !== null) expect(ids.has(node.parent)).toBe(true);
+    }
+  });
+
+  test('pixel attachments are hashed, dimensioned, masked, and structurally redacted', async ({ page }) => {
+    const initialSecret = 'sentinel-73';
+    const changedSecret = 'changed-secret-73';
+    await page.goto('/scenario/sensitive-data?seed=73');
+    const client = createDomstamp(playwrightAdapter(), {
+      defaults: {
+        features: {
+          accessibility: { relationships: true, tree: true },
+          pixels: { format: 'png', fullPage: false, scale: 'css' }
+        },
+        data: {
+          mode: 'redact',
+          text: [initialSecret, changedSecret],
+          attributes: ['data-token'],
+          pixelMasks: ['.secret-zone'],
+          replacement: '[MASKED]'
+        }
+      }
+    });
+    const first = await client.capture(page);
+    expect(JSON.stringify(first)).not.toContain(initialSecret);
+    expect(first.attachments).toHaveLength(1);
+    expect(first.attachments[0]).toMatchObject({
+      kind: 'screenshot',
+      mediaType: 'image/png',
+      width: 1280,
+      height: 720
+    });
+    expect(first.attachments[0]!.sha256).toMatch(/^[a-f0-9]{64}$/);
+
+    await page.locator('.secret-zone').evaluate((element, secret) => {
+      element.querySelector('label')!.textContent = `Credential ${secret}`;
+      element.querySelector('input')!.setAttribute('value', secret);
+      (element.querySelector('input') as HTMLInputElement).value = secret;
+      element.querySelector('p')!.textContent = `Visible ${secret}`;
+    }, changedSecret);
+    const second = await client.capture(page);
+    expect(JSON.stringify(second)).not.toContain(changedSecret);
+    expect(second.attachments[0]!.sha256).toBe(first.attachments[0]!.sha256);
   });
 
   test('node references are closed and capture does not mutate the page', async ({ page }) => {
@@ -229,5 +290,103 @@ test.describe('@conformance snapshot contract', () => {
 
   test('TQ1 rejects corrupted transport data', () => {
     expect(() => decodeTq1(Buffer.from('not-a-tq1-payload'))).toThrow();
+  });
+
+  test('generated content and canvas boundaries are explicit while pixels preserve rendered output', async ({ page }) => {
+    await page.goto('/scenario/rendering-boundaries?seed=37');
+    const client = createDomstamp(playwrightAdapter(), {
+      defaults: { features: { pixels: { format: 'png', fullPage: false, scale: 'css' } } }
+    });
+    const snapshot = await client.capture(page);
+    const byId = (id: string) => snapshot.documents[0]!.nodes.find((node) =>
+      node.attributes.some(([name, value]) => name === 'id' && value === id));
+
+    expect(byId('generated')?.state).toMatchObject({
+      '::before.content': '"before-37"',
+      '::after.content': '"after-37"'
+    });
+    expect(byId('bitmap')?.state).toMatchObject({
+      canvasWidth: 180,
+      canvasHeight: 72,
+      canvasBitmap: 'pixel-layer-required'
+    });
+    expect(snapshot.attachments[0]?.kind).toBe('screenshot');
+    // Closed roots are a declared unsupported capability; the host remains
+    // visible but inaccessible internals are never implied to be captured.
+    expect(byId('closed-widget')).toBeDefined();
+    expect(snapshot.documents[0]!.nodes.some((node) => node.value === 'inaccessible closed control')).toBe(false);
+  });
+
+  test('detached frame churn degrades to explicit frame status without breaking graph closure', async ({ page }) => {
+    const adapter = await loadAdapter();
+    await page.goto('/scenario/frame-churn?seed=51');
+    await expect.poll(() => page.frames().length).toBe(2);
+    await page.evaluate(() => (window as typeof window & {
+      __GYM__: { startFrameChurn(): void };
+    }).__GYM__.startFrameChurn());
+    const snapshot = await adapter.capture(page, { maxNodesPerFrame: 5_000 });
+    const frameIds = new Set(snapshot.documents.map((document) => document.frameId));
+    for (const document of snapshot.documents) {
+      expect(['stable', 'unstable', 'detached', 'error']).toContain(document.consistency.status);
+      if (document.parentFrameId !== null) expect(frameIds.has(document.parentFrameId)).toBe(true);
+    }
+  });
+
+  test('hostile page hooks fail closed as an explicit document error', async ({ page }) => {
+    const adapter = await loadAdapter();
+    await page.goto('/scenario/hostile-prototypes?seed=61');
+    await page.evaluate(() => (window as typeof window & {
+      __GYM__: { armHostility(): void };
+    }).__GYM__.armHostility());
+    const snapshot = await adapter.capture(page);
+    expect(snapshot.documents[0]!.consistency.status).toBe('error');
+    expect(snapshot.documents[0]!.nodes).toHaveLength(1);
+    expect(snapshot.documents[0]!.nodes[0]).toMatchObject({ kind: 'capture-error', name: 'capture-error' });
+  });
+
+  test('wide documents obey a hard node budget under scale pressure', async ({ page }) => {
+    test.setTimeout(120_000);
+    const requested = Number(process.env.DOMSTAMP_SCALE_NODES ?? 25_000);
+    await page.goto(`/scenario/scale-wide?seed=71&nodes=${requested}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toHaveAttribute('data-node-count', String(Math.min(requested, 1_000_000)));
+    const client = createDomstamp(playwrightAdapter(), {
+      defaults: {
+        features: {
+          dom: { shadowRoots: 'none' },
+          layout: false,
+          frames: false,
+          interaction: false,
+          accessibility: false
+        },
+        limits: { maxNodesPerFrame: 2_000, maxDepth: 32 }
+      }
+    });
+    const started = performance.now();
+    const document = (await client.capture(page)).documents[0]!;
+    expect(document.nodes).toHaveLength(2_000);
+    expect(document.truncated.nodes).toBe(true);
+    expect(performance.now() - started).toBeLessThan(30_000);
+  });
+
+  test('repeated captures reuse one mutation observer and remain stable across a long session', async ({ page }) => {
+    test.setTimeout(120_000);
+    const adapter = await loadAdapter();
+    await page.goto('/scenario/document-kitchen-sink?seed=81');
+    for (let index = 0; index < 30; index += 1) {
+      const snapshot = await adapter.capture(page, { maxNodesPerFrame: 5_000 });
+      expect(snapshot.documents[0]!.consistency.status).toBe('stable');
+    }
+    const mutationState = await page.evaluate(() => (
+      window as typeof window & {
+        __DOMSTAMP_MUTATION_STATE_V1__?: { epoch: number; installations: number };
+      }
+    ).__DOMSTAMP_MUTATION_STATE_V1__);
+    expect(mutationState).toMatchObject({ installations: 1 });
+
+    for (let navigation = 0; navigation < 6; navigation += 1) {
+      await page.goto(`/scenario/document-kitchen-sink?seed=${82 + navigation}`);
+      const snapshot = await adapter.capture(page);
+      expect(snapshot.documents[0]!.consistency.status).toBe('stable');
+    }
   });
 });

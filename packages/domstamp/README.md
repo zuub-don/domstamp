@@ -6,7 +6,7 @@ Framework-neutral browser-state snapshot orchestration for automation and AI age
 npm install domstamp
 ```
 
-Domstamp does not know about React, Vue, Angular, Svelte, or any browser driver. It coordinates a typed adapter, validates its output, applies plugins, enforces limits, and returns a versioned snapshot.
+Domstamp does not know about React, Vue, Angular, Svelte, or any browser driver. It coordinates a typed adapter, validates its output, applies trusted structural redaction and plugins, enforces limits, and returns a versioned snapshot.
 
 ## Capture
 
@@ -64,7 +64,7 @@ const adapter: DomstampAdapter<Session, DriverOptions> = {
     consistency: { mode: 'best-effort' }
   },
   async capture(session, context) {
-    // Honor context.signal and return schemaVersion 1.
+    // Honor context.signal and return a schemaVersion 2 snapshot.
     return await session.snapshot() as DomSnapshot;
   }
 };
@@ -72,6 +72,23 @@ const adapter: DomstampAdapter<Session, DriverOptions> = {
 
 Adapter defaults should describe the safest useful behavior supported by its declared capabilities. Explicit consumer requests are still capability-checked.
 
+Use the driver-neutral smoke kit before running the complete browser gym:
+
+```ts
+import { runAdapterConformance } from 'domstamp';
+
+await runAdapterConformance(adapter, {
+  createTarget: () => openFixtureSession(),
+  disposeTarget: (session) => session.close()
+});
+```
+
+## Schema compatibility and redaction
+
+`inspectSnapshotCompatibility(value)` identifies schema 1 and schema 2 data. `migrateSnapshot(value)` validates the complete graph and explicitly upgrades schema 1 to schema 2.
+
+Structural redaction runs after raw adapter validation and before consumer plugin transforms. It preserves IDs and resolved graph targets while covering configured text, attributes, runtime input values, metadata, styles, references, and accessibility strings. Redacted screenshots additionally require masks from a pixel-capable adapter.
+
 ## Boundaries
 
-The core has no runtime dependencies. “Lossless” means lossless for fields and browser boundaries represented by the schema; it does not imply access to closed shadow roots, GPU state, browser chrome, or JavaScript heap state. Snapshot data may contain credentials, personal data, text, and form values—apply redaction before exporting it outside the browser’s trust boundary.
+The core has no runtime dependencies. “Lossless” means lossless for fields and browser boundaries represented by the schema; it does not imply access to closed shadow roots, GPU state, browser chrome, or JavaScript heap state. Snapshot data may contain credentials, personal data, text, and form values—configure and test an explicit redaction policy before exporting it outside the browser’s trust boundary.

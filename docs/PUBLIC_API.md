@@ -14,7 +14,7 @@ interface DomstampAdapter<TTarget, TAdapterOptions = unknown> {
 }
 ```
 
-This keeps framework and driver dependencies outside the core while preserving full TypeScript inference. A Playwright adapter receives `Page`; a WebDriver adapter may receive a session; a remote adapter may receive an RPC client.
+This keeps framework and driver dependencies outside the core while preserving full TypeScript inference. A Playwright or Puppeteer adapter receives its driver's `Page`; a WebDriver adapter may receive a session; a remote adapter may receive an RPC client.
 
 ## Construction
 
@@ -68,10 +68,10 @@ Caller cancellation reports `ABORTED`; expiration of `limits.timeoutMs` reports 
 
 ## Plugins
 
-Plugins execute in declaration order:
+Capture stages execute in this order:
 
 ```text
-beforeCapture → adapter → transform → validation → afterCapture
+beforeCapture → adapter → validation → structural redaction → transform → validation → afterCapture
 ```
 
 Plugin failures use `PLUGIN_FAILED` with plugin and hook metadata. Error hooks cannot replace the original error. Every transformed snapshot is schema-validated and size-checked again.
@@ -87,9 +87,14 @@ All expected library failures use `DomstampError` and a stable code:
 - `PLUGIN_FAILED`
 - `TIMEOUT`
 - `UNSUPPORTED_CAPABILITY`
+- `UNSUPPORTED_SCHEMA`
 
 Consumers should branch on `code`, never parse error messages.
 
 ## Schema versioning
 
-Snapshots carry both `format: "domstamp"` and `schemaVersion`. Decoders and adapters must reject unsupported major schema versions. The compatibility and migration policy must be finalized before `1.0.0`; it remains a release blocker for the first public package.
+Snapshots carry both `format: "domstamp"` and `schemaVersion`. Schema 2 is current. `inspectSnapshotCompatibility` recognizes schema 1 and 2, while `migrateSnapshot` validates current data and explicitly upgrades schema 1. Unknown versions fail with `UNSUPPORTED_SCHEMA`. The duration of this compatibility window must be finalized before `1.0.0`.
+
+## Adapter conformance
+
+`runAdapterConformance(adapter, options)` is a test-runner-independent baseline that checks adapter metadata, the DOM capability, schema validity, and repeatability for a quiescent target. Playwright and Puppeteer additionally run through real-browser gym cases.

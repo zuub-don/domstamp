@@ -73,7 +73,7 @@ Adapter defaults sit between library defaults and consumer defaults. Use them to
 | `accessibility-tree` | Accessibility tree is requested |
 | `pixels` | Pixel capture is requested |
 | `mutation-consistency` | Consistency mode is `verify` |
-| `redaction` | Data mode is `redact` |
+| `redaction` | Redacted pixel capture is requested |
 
 Do not advertise a capability with partial, silently omitted output. Introduce a narrower adapter option or a new capability if the distinction matters to consumers.
 
@@ -82,7 +82,7 @@ Do not advertise a capability with partial, silently omitted output. Introduce a
 - Honor `context.signal` before and during expensive work.
 - Obey resolved node, depth, frame, and time limits.
 - Represent truncation and frame failures explicitly.
-- Return schema version 1 and valid closed references.
+- Return schema version 2 and valid closed references.
 - Avoid mutating the inspected page beyond any documented observer or instrumentation.
 - Keep traversal iterative for attacker-controlled depth.
 
@@ -90,4 +90,17 @@ The core validates frame and node identity, parent graphs, references, geometry,
 
 ## Conformance
 
-Run a new adapter through the shared [Conformance gym](/operations/gym/). Tests should use the public `createDomstamp(adapter)` path rather than bypassing core orchestration.
+Start with the test-runner-independent public kit:
+
+```ts
+import { runAdapterConformance } from 'domstamp';
+
+const report = await runAdapterConformance(adapter, {
+  createTarget: () => openQuiescentFixture(),
+  disposeTarget: (target) => target.close()
+});
+```
+
+It validates metadata, the `dom` capability, two schema-valid captures, and determinism for a quiescent target. `canonicalize` can remove genuinely driver-specific evidence such as native accessibility IDs before comparison.
+
+Then run the adapter through the shared [Conformance gym](/operations/gym/) for browser semantics, frames, hostile boundaries, scale, and chaos. Tests should use the public `createDomstamp(adapter)` path rather than bypassing core orchestration.

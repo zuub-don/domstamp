@@ -17,9 +17,11 @@ Domstamp models boundaries explicitly so callers can distinguish “absent in th
 | Cross-origin iframe | Supported | Independent document through Playwright’s frame execution boundary |
 | Runtime form state | Supported | Values, checked/selected state, text selection |
 | Geometry and styles | Supported | Bounding rectangles and configured computed properties |
-| Native accessibility tree | Unavailable | Modeled as a capability but not implemented by the Playwright adapter |
-| Pixels | Unavailable | Modeled as a capability but not implemented by the Playwright adapter |
-| Canvas/WebGL internals | Unavailable | Only the canvas DOM element is represented |
+| ARIA perception tree | Supported | Per-frame role, name, value, state, and parent graph from Playwright ARIA snapshots |
+| Native OS accessibility tree | Unavailable | The current source is not an operating-system tree |
+| Pixels | Supported | Hashed PNG/JPEG attachment with optional full-page/device scaling |
+| Canvas/WebGL internals | Pixel evidence | DOM dimensions and an explicit pixel-layer marker; raster output is preserved only when pixels are enabled |
+| CSS generated content | Supported where inspectable | `::before` and `::after` content from accessible matching stylesheet rules |
 | Browser chrome and extension UI | Out of scope | Not page DOM |
 | JavaScript heap and closures | Out of scope | Not part of the snapshot schema |
 
@@ -46,3 +48,7 @@ Set `frames: false` to capture only the main document, or `crossOrigin: false` t
 - `all-available`: requires the adapter to advertise `closed-shadow-roots` in addition to open roots.
 
 The Playwright adapter deliberately rejects `all-available`; treating it as an alias for `open` would be misleading.
+
+## Driver differences
+
+The Puppeteer adapter shares DOM, open-shadow, frame, layout, interaction, and mutation-consistency behavior. It does not advertise accessibility trees, pixels, or pixel redaction. Core structural redaction remains available because it is driver-independent.

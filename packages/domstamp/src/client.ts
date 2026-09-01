@@ -1,6 +1,7 @@
 import type { AdapterCapability, CaptureResult, DomstampAdapter, DomstampPlugin, PluginContext } from './adapter.js';
 import { DEFAULT_CAPTURE_CONFIG, type CaptureConfig, type CaptureOverrides, type CaptureSettings } from './config.js';
 import { DomstampError } from './errors.js';
+import { redactSnapshot } from './redaction.js';
 import { SNAPSHOT_FORMAT, SNAPSHOT_SCHEMA_VERSION, type DomSnapshot } from './schema.js';
 
 export interface DomstampOptions<TTarget, TAdapterOptions = unknown> {
@@ -41,7 +42,9 @@ function resolveConfig<TAdapterOptions>(
   const accessibility = mergeEnabledFeature(base.features.accessibility, featureOverrides?.accessibility, safeDefaults.accessibility || {
     relationships: true, tree: false
   });
-  const pixels = mergeEnabledFeature(base.features.pixels, featureOverrides?.pixels, { format: 'png' });
+  const pixels = mergeEnabledFeature(base.features.pixels, featureOverrides?.pixels, {
+    format: 'png', fullPage: false, scale: 'css'
+  });
   const data = overrides.data ?? base.data;
   const config: CaptureConfig<TAdapterOptions> = Object.freeze({
     scope: Object.freeze({ ...(overrides.scope ?? base.scope) }),
@@ -63,7 +66,8 @@ function resolveConfig<TAdapterOptions>(
     data: Object.freeze(data.mode === 'lossless' ? { mode: 'lossless' } : {
       ...data,
       ...(data.text === undefined ? {} : { text: Object.freeze([...data.text]) }),
-      ...(data.attributes === undefined ? {} : { attributes: Object.freeze([...data.attributes]) })
+      ...(data.attributes === undefined ? {} : { attributes: Object.freeze([...data.attributes]) }),
+      ...(data.pixelMasks === undefined ? {} : { pixelMasks: Object.freeze([...data.pixelMasks]) })
     }),
     ...(overrides.adapter !== undefined
       ? { adapter: overrides.adapter }
@@ -108,6 +112,19 @@ export function validateConfig(config: CaptureConfig): void {
       throw new DomstampError('INVALID_CONFIG', 'JPEG quality must be an integer from 0 through 100');
     }
   }
+  if (config.data.mode === 'redact') {
+    for (const [name, values] of [['data.text', config.data.text], ['data.attributes', config.data.attributes], ['data.pixelMasks', config.data.pixelMasks]] as const) {
+      if (values !== undefined && values.some((value) => typeof value !== 'string' || value.length === 0)) {
+        throw new DomstampError('INVALID_CONFIG', `${name} entries must be non-empty strings`);
+      }
+    }
+    if (config.data.replacement !== undefined && config.data.replacement.length === 0) {
+      throw new DomstampError('INVALID_CONFIG', 'data.replacement must not be empty');
+    }
+    if (config.features.pixels !== false && (!config.data.pixelMasks || config.data.pixelMasks.length === 0)) {
+      throw new DomstampError('INVALID_CONFIG', 'Redacted pixel capture requires at least one data.pixelMasks selector');
+    }
+  }
 }
 
 function requiredCapabilities(config: CaptureConfig): AdapterCapability[] {
@@ -123,7 +140,7 @@ function requiredCapabilities(config: CaptureConfig): AdapterCapability[] {
   if (config.features.accessibility !== false && config.features.accessibility.tree) required.push('accessibility-tree');
   if (config.features.pixels !== false) required.push('pixels');
   if (config.consistency.mode === 'verify') required.push('mutation-consistency');
-  if (config.data.mode === 'redact') required.push('redaction');
+  if (config.data.mode === 'redact' && config.features.pixels !== false) required.push('redaction');
   return required;
 }
 
@@ -181,6 +198,8 @@ export function validateSnapshot(
     invalidSnapshot(`Snapshot contains ${snapshot.documents.length} documents; limit is ${limits.maxDocuments}`);
   }
   if (typeof snapshot.framesTruncated !== 'boolean') invalidSnapshot('framesTruncated must be a boolean');
+  if (!Array.isArray(snapshot.accessibility)) invalidSnapshot('accessibility must be an array');
+  if (!Array.isArray(snapshot.attachments)) invalidSnapshot('attachments must be an array');
   if (snapshot.viewport !== null && (!isRecord(snapshot.viewport)
     || !isFiniteNumber(snapshot.viewport.width) || snapshot.viewport.width < 0
     || !isFiniteNumber(snapshot.viewport.height) || snapshot.viewport.height < 0)) {
@@ -307,6 +326,65 @@ export function validateSnapshot(
       invalidSnapshot(`${typedDocument.frameId} has an unresolved parent frame`);
     }
   }
+  const accessibilityFrames = new Set<string>();
+  for (const tree of snapshot.accessibility) {
+    if (!isRecord(tree) || typeof tree.frameId !== 'string' || !frameIds.has(tree.frameId)
+      || accessibilityFrames.has(tree.frameId)) {
+      invalidSnapshot('Accessibility tree has an invalid or duplicate frameId');
+    }
+    accessibilityFrames.add(tree.frameId);
+    if (!['aria-snapshot', 'native'].includes(String(tree.source)) || typeof tree.truncated !== 'boolean'
+      || !Array.isArray(tree.nodes)) {
+      invalidSnapshot(`Accessibility tree for ${tree.frameId} is invalid`);
+    }
+    const nodeIds = new Set<string>();
+    const parents = new Map<string, string | null>();
+    for (const node of tree.nodes) {
+      if (!isRecord(node) || typeof node.id !== 'string' || !node.id || nodeIds.has(node.id)
+        || (node.parent !== null && typeof node.parent !== 'string')
+        || typeof node.role !== 'string' || !node.role || typeof node.name !== 'string'
+        || (node.description !== null && typeof node.description !== 'string')
+        || (node.value !== null && typeof node.value !== 'string')
+        || (node.domPath !== null && typeof node.domPath !== 'string')
+        || !isRecord(node.states)
+        || !Object.values(node.states).every((value) => value === null || typeof value === 'boolean'
+          || typeof value === 'string' || isFiniteNumber(value))) {
+        invalidSnapshot(`Accessibility tree for ${tree.frameId} contains an invalid node`);
+      }
+      if (node.parent === node.id) invalidSnapshot(`Accessibility node ${node.id} cannot be its own parent`);
+      nodeIds.add(node.id);
+      parents.set(node.id, node.parent as string | null);
+    }
+    for (const [nodeId, parent] of parents) {
+      if (parent !== null && !nodeIds.has(parent)) invalidSnapshot(`Accessibility node ${nodeId} has an unresolved parent`);
+    }
+    if (tree.root !== null && (typeof tree.root !== 'string' || !nodeIds.has(tree.root))) {
+      invalidSnapshot(`Accessibility tree for ${tree.frameId} has an unresolved root`);
+    }
+    validateParentGraph(parents, `${tree.frameId} accessibility`);
+  }
+  const attachmentIds = new Set<string>();
+  for (const attachment of snapshot.attachments) {
+    if (!isRecord(attachment) || typeof attachment.id !== 'string' || !attachment.id || attachmentIds.has(attachment.id)
+      || attachment.kind !== 'screenshot'
+      || (attachment.frameId !== null && (typeof attachment.frameId !== 'string' || !frameIds.has(attachment.frameId)))
+      || !['image/jpeg', 'image/png'].includes(String(attachment.mediaType))
+      || attachment.encoding !== 'base64' || typeof attachment.data !== 'string'
+      || !Number.isSafeInteger(attachment.byteLength) || (attachment.byteLength as number) < 0
+      || typeof attachment.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(attachment.sha256)
+      || !Number.isSafeInteger(attachment.width) || (attachment.width as number) < 0
+      || !Number.isSafeInteger(attachment.height) || (attachment.height as number) < 0) {
+      invalidSnapshot('Snapshot contains an invalid attachment');
+    }
+    const normalized = attachment.data.replace(/\s/g, '');
+    if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)) {
+      invalidSnapshot(`Attachment ${attachment.id} contains invalid base64 data`);
+    }
+    const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+    const decodedLength = normalized.length === 0 ? 0 : Math.floor(normalized.length * 3 / 4) - padding;
+    if (decodedLength !== attachment.byteLength) invalidSnapshot(`Attachment ${attachment.id} byteLength does not match its data`);
+    attachmentIds.add(attachment.id);
+  }
   validateParentGraph(frameParents, 'Frame');
 }
 
@@ -400,7 +478,7 @@ export function createDomstamp<TTarget, TAdapterOptions = unknown>(
       signal
     };
     const start = now();
-    const diagnostics: Array<{ level: 'warning'; code: string; message: string; details: Readonly<Record<string, unknown>> }> = [];
+    const diagnostics: Array<{ level: 'info' | 'warning'; code: string; message: string; details: Readonly<Record<string, unknown>> }> = [];
     const snapshotLimits: SnapshotValidationLimits = {
       maxDocuments: config.features.frames === false ? 1 : config.features.frames.maxFrames,
       maxNodesPerDocument: config.limits.maxNodesPerFrame,
@@ -447,6 +525,17 @@ export function createDomstamp<TTarget, TAdapterOptions = unknown>(
         throw new DomstampError('INVALID_SNAPSHOT', 'Snapshot exceeds limits.maxSnapshotBytes', {
           details: { actualBytes: initialBytes, maxBytes: config.limits.maxSnapshotBytes }
         });
+      }
+      if (config.data.mode === 'redact') {
+        const redacted = redactSnapshot(snapshot, config.data);
+        snapshot = redacted.snapshot;
+        diagnostics.push({
+          level: 'info',
+          code: 'REDACTION_APPLIED',
+          message: `Applied ${redacted.replacements} structural redaction replacement(s)`,
+          details: { replacements: redacted.replacements }
+        });
+        validateSnapshot(snapshot, snapshotLimits);
       }
       for (const plugin of plugins) {
         if (!plugin.transform) continue;

@@ -42,7 +42,12 @@ export interface CaptureFeatures {
   readonly frames: false | FrameFeatureOptions;
   readonly interaction: false | InteractionFeatureOptions;
   readonly accessibility: false | Readonly<{ relationships: boolean; tree: boolean }>;
-  readonly pixels: false | Readonly<{ format: 'png' | 'jpeg'; quality?: number }>;
+  readonly pixels: false | Readonly<{
+    format: 'png' | 'jpeg';
+    quality?: number;
+    fullPage: boolean;
+    scale: 'css' | 'device';
+  }>;
 }
 
 export interface CaptureLimits {
@@ -63,6 +68,11 @@ export type DataPolicy =
       inputValues?: boolean;
       text?: readonly string[];
       attributes?: readonly string[];
+      urls?: boolean;
+      titles?: boolean;
+      accessibility?: boolean;
+      pixelMasks?: readonly string[];
+      pixelMaskColor?: string;
       replacement?: string;
     }>;
 
@@ -83,7 +93,12 @@ export interface CaptureSettings<TAdapterOptions = unknown> {
     frames: false | Partial<FrameFeatureOptions>;
     interaction: false | Partial<InteractionFeatureOptions>;
     accessibility: false | Partial<{ relationships: boolean; tree: boolean }>;
-    pixels: false | Partial<{ format: 'png' | 'jpeg'; quality: number }>;
+    pixels: false | Partial<{
+      format: 'png' | 'jpeg';
+      quality: number;
+      fullPage: boolean;
+      scale: 'css' | 'device';
+    }>;
   }>;
   readonly limits?: Partial<CaptureLimits>;
   readonly consistency?: ConsistencyOptions;
