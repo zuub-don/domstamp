@@ -18,7 +18,8 @@ export const scenarioNames = [
   'frame-churn',
   'hostile-prototypes',
   'scale-wide',
-  'chaos-laboratory'
+  'chaos-laboratory',
+  'mfa-portal'
 ];
 
 const escapeHtml = (value) =>
@@ -108,6 +109,32 @@ const scenarios = {
       const input = document.querySelector('#credential');
       input.value = 'runtime-sentinel-${seed}';
       input.setAttribute('aria-describedby', 'secret-description');
+    `),
+
+  // Models a realistic payer-portal MFA step: a password input (value known to the
+  // caller ahead of time, like a stored credential), a hidden OTP input (value
+  // typed by the automation), and a server-rendered confirmation code shown as
+  // plain page TEXT rather than an input value, the way many portals display a
+  // "resend code" confirmation or a just-issued one-time code. The automation does
+  // NOT know this displayed code's digits in advance, so it cannot be supplied as
+  // a redaction needle up front.
+  'mfa-portal': ({ seed }) => shell('mfa-portal', seed, `
+    <section class="login-zone">
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" value="hunter2-${seed}">
+      <label for="security-answer">Security answer</label>
+      <input id="security-answer" type="text" name="security-answer" value="mothers-maiden-${seed}">
+    </section>
+    <section class="otp-zone">
+      <label for="otp-input">Enter the code we sent you</label>
+      <input id="otp-input" type="text" name="otp-input" value="">
+      <p id="otp-display">Your verification code is <strong id="otp-code">0</strong>. It expires in 5 minutes.</p>
+    </section>
+    <p id="public-copy">Public, non-sensitive portal copy</p>`, `
+      const generatedCode = String(100000 + (${seed} * 7919) % 900000);
+      document.querySelector('#otp-code').textContent = generatedCode;
+      document.querySelector('#otp-input').value = generatedCode;
+      window.__GYM_GENERATED_OTP__ = generatedCode;
     `),
 
   'shadow-dom': ({ seed }) => shell('shadow-dom', seed, `

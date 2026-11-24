@@ -4,7 +4,9 @@ Domstamp captures the browser state an automation agent could perceive at a spec
 
 Current source release: **`0.3.0` preview**. The package boundary and guarded release workflow are ready, but the npm packages have not been published.
 
-[Documentation](https://zuub-don.github.io/domstamp/) · [Public API](docs/PUBLIC_API.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Documentation](https://zuub-don.github.io/domstamp/) · [**Architecture walkthrough**](https://zuub-don.github.io/domstamp/architecture/) · [Public API](docs/PUBLIC_API.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+
+An interactive, chaptered diagram of the full capture pipeline — driver → adapter → walker → frames → shadow DOM → consistency → redaction → evidence → codec — with the chaos gym's fault injection mapped against every stage: **[zuub-don.github.io/domstamp/architecture](https://zuub-don.github.io/domstamp/architecture/)**
 
 ```ts
 import { createDomstamp } from 'domstamp';
