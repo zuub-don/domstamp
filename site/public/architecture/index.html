@@ -37,6 +37,11 @@
   .t-title { font: 500 13.5px var(--mono); fill: var(--ink); }
   .t-title.ext { font: 600 14px var(--sans); letter-spacing: -.01em; }
   .t-sub { font: 400 12px var(--sans); fill: var(--muted); }
+  .t-code { font: 500 9.5px var(--mono); fill: var(--teal); opacity: 0; }
+  .t-code.gym { fill: var(--rust); }
+  .t-code .cursor { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .t-code .cursor { animation: none; } }
 
   .frame rect { fill: none; stroke: var(--line); stroke-dasharray: 2 5; stroke-width: 1; }
   .frame text { font: 600 10px var(--mono); letter-spacing: .18em; fill: var(--muted); }
@@ -182,7 +187,7 @@
       <button class="btn" id="prev" aria-label="Previous chapter" disabled>
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3L5 8l5 5"/></svg>
       </button>
-      <span class="hint">← → step · click a node · O overview</span>
+      <span class="hint">← → step · click a node · pseudocode readouts are illustrative</span>
       <button class="btn" id="play" aria-label="Autoplay">
         <svg viewBox="0 0 16 16" fill="currentColor" id="play-ico"><path d="M5 3l8 5-8 5z"/></svg>
       </button>
@@ -218,42 +223,42 @@ const N = {
   playwright: { x: 140, y: 330, w: 230, k: 'Driver', t: 'playwright', s: 'ARIA tree + masked pixel evidence', ext: 1 },
   puppeteer:  { x: 140, y: 470, w: 230, k: 'Driver', t: 'puppeteer', s: 'cross-driver parity proof', ext: 1 },
 
-  adapter: { x: 470, y: 400, w: 240, k: 'Core', t: 'adapter.ts', s: 'one typed contract, zero driver imports in core' },
+  adapter: { x: 470, y: 400, w: 240, k: 'Core', t: 'adapter.ts', s: 'one typed contract, zero driver imports in core', code: "lock(adapter); driver.capture(page)" },
 
-  walker:   { x: 800, y: 400, w: 240, k: 'Core', t: 'walker.ts', s: 'iterative, never recursive — flat node table' },
+  walker:   { x: 800, y: 400, w: 240, k: 'Core', t: 'walker.ts', s: 'iterative, never recursive — flat node table', code: "while (stack.length) visit(stack.pop())" },
   docMode:  { x: 800, y: 600, w: 220, h: Hs, k: 'Mode', t: 'document mode', s: 'every accessible node, bounded' },
   vpMode:   { x: 800, y: 690, w: 220, h: Hs, k: 'Mode', t: 'viewport mode', s: 'rendered intersections + ancestors' },
   focusMode:{ x: 800, y: 780, w: 220, h: Hs, k: 'Mode', t: 'focus mode', s: 'active control + labels + ARIA refs' },
 
-  frames:   { x: 1130, y: 400, w: 240, k: 'Core', t: 'frames.ts', s: 'each browsing context captured independently' },
+  frames:   { x: 1130, y: 400, w: 240, k: 'Core', t: 'frames.ts', s: 'each browsing context captured independently', code: "for (const f of page.frames()) capture(f)" },
   sameOrig: { x: 1130, y: 600, w: 220, h: Hs, k: 'Frame', t: 'same-origin', s: 'walked in-process' },
   crossOrig:{ x: 1130, y: 690, w: 220, h: Hs, k: 'Frame', t: 'cross-origin', s: 'security boundary preserved, not erased' },
   nested:   { x: 1130, y: 780, w: 220, h: Hs, k: 'Frame', t: 'nested frames', s: 'bounded by maxFrames' },
 
-  shadow:   { x: 1460, y: 400, w: 240, k: 'Core', t: 'shadow.ts', s: 'open roots native, closed roots instrumented' },
+  shadow:   { x: 1460, y: 400, w: 240, k: 'Core', t: 'shadow.ts', s: 'open roots native, closed roots instrumented', code: "root = el.shadowRoot ?? closedMap.get(el)" },
   openRoot: { x: 1460, y: 600, w: 220, h: Hs, k: 'Root', t: 'open roots', s: 'native, no setup' },
   closedRoot:{x: 1460, y: 690, w: 220, h: Hs, k: 'Root', t: 'closed roots', s: 'installClosedShadowInstrumentation()' },
 
-  consistency:{x: 1790, y: 400, w: 240, k: 'Core', t: 'consistency.ts', s: 'retries until mutation epochs stabilize' },
+  consistency:{x: 1790, y: 400, w: 240, k: 'Core', t: 'consistency.ts', s: 'retries until mutation epochs stabilize', code: "while (!stable) await settle(settleMs)" },
   bestEffort: {x: 1790, y: 600, w: 220, h: Hs, k: 'Mode', t: 'best-effort', s: 'single pass, status may be unstable' },
   verifyMode: {x: 1790, y: 690, w: 220, h: Hs, k: 'Mode', t: 'verify + retries', s: 'settleMs between attempts' },
 
-  redaction:{ x: 2120, y: 400, w: 240, k: 'Core', t: 'redaction.ts', s: 'runs before any plugin sees the data' },
+  redaction:{ x: 2120, y: 400, w: 240, k: 'Core', t: 'redaction.ts', s: 'runs before any plugin sees the data', code: "mutex.lock(buffer); scrub(node); unlock()" },
   attrs:    { x: 2120, y: 600, w: 220, h: Hs, k: 'Rule', t: 'sensitive attrs', s: 'authorization, cookie, data-token…' },
   inputs:   { x: 2120, y: 690, w: 220, h: Hs, k: 'Rule', t: 'input values', s: 'protected by default, no needle needed' },
   pixels:   { x: 2120, y: 780, w: 220, h: Hs, k: 'Rule', t: 'pixel masks', s: 'selectors blanked in screenshots' },
   needles:  { x: 2120, y: 870, w: 220, h: Hs, k: 'Rule', t: 'text needles', s: 'exact-match only — known boundary' },
 
-  evidence: { x: 2450, y: 400, w: 240, k: 'Core', t: 'evidence.ts', s: 'ARIA graph + hashed screenshots' },
+  evidence: { x: 2450, y: 400, w: 240, k: 'Core', t: 'evidence.ts', s: 'ARIA graph + hashed screenshots', code: "providers.map(p => p.collect(frame))" },
   a11y:     { x: 2450, y: 600, w: 220, h: Hs, k: 'Provider', t: 'accessibility', s: 'role / name / state per frame' },
   pixelsEv: { x: 2450, y: 690, w: 220, h: Hs, k: 'Provider', t: 'pixels', s: 'png / jpeg, sha256 hashed' },
 
-  codec:    { x: 2780, y: 400, w: 240, k: 'Core', t: 'tq1 codec', s: 'decode(encode(x)) == x — tested invariant' },
+  codec:    { x: 2780, y: 400, w: 240, k: 'Core', t: 'tq1 codec', s: 'decode(encode(x)) == x — tested invariant', code: "assert(decode(encode(x)) === x)" },
   dict:     { x: 2780, y: 600, w: 220, h: Hs, k: 'Stage', t: 'dictionary', s: 'structural dedupe' },
   gzip:     { x: 2780, y: 690, w: 220, h: Hs, k: 'Stage', t: 'gzip transport', s: 'expansion-limited' },
   limits:   { x: 2780, y: 780, w: 220, h: Hs, k: 'Stage', t: 'decode limits', s: 'rejects corrupt / oversized input' },
 
-  gym:      { x: 1460, y: 1120, w: 250, k: 'Gym', t: 'chaos gym', s: 'seeded fault injection, every stage above' },
+  gym:      { x: 1460, y: 1120, w: 250, k: 'Gym', t: 'chaos gym', s: 'seeded fault injection, every stage above', code: "const rng = xorshift32(seed); rng.next()" },
   seed:     { x: 1460, y: 1300, w: 240, h: Hs, k: 'Gym', t: 'seeded scheduler', s: 'byte-identical replay from one seed' },
   faults:   { x: 1460, y: 1390, w: 240, h: Hs, k: 'Gym', t: 'fault surfaces', s: 'frame churn · network 503 · DOM mutation' },
   shrink:   { x: 1460, y: 1480, w: 240, h: Hs, k: 'Gym', t: 'shrinker', s: 'minimizes a failing run to its smallest cause' },
@@ -367,7 +372,7 @@ const gFrames = $('frames'), gBase = $('edges-base'), gHi = $('edges-hi'), gPuls
 const frameEls = GROUPS.map(([label, ids]) => {
   const ns = ids.map((i) => N[i]);
   const x0 = Math.min(...ns.map(L)) - 22, x1 = Math.max(...ns.map(R)) + 22;
-  const y0 = Math.min(...ns.map(T)) - 38, y1 = Math.max(...ns.map(B)) + 20;
+  const y0 = Math.min(...ns.map(T)) - 38, y1 = Math.max(...ns.map(B)) + 34;
   const g = el('g', { class: 'frame' }, gFrames);
   el('rect', { x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 18 }, g);
   const t = el('text', { x: x0 + 18, y: y0 + 22 }, g);
@@ -394,6 +399,8 @@ E.forEach((e) => {
 });
 
 const nodeEls = {};
+const codeEls = {};
+const typers = {};
 const measureScratch = el('text', { class: 't-sub', x: -9999, y: -9999 }, gNodes);
 function wrapLines(text, maxWidth) {
   const words = text.split(' ');
@@ -437,6 +444,10 @@ for (const id in N) {
       const tspan = el('tspan', { x: lx, dy: i === 0 ? 0 : 14 }, s);
       tspan.textContent = line;
     });
+    if (n.code) {
+      const codeEl = el('text', { class: 't-code' + (id === 'gym' ? ' gym' : ''), x: lx, y: n.h / 2 + 15 }, g);
+      codeEls[id] = codeEl;
+    }
   }
   g.addEventListener('click', () => jumpToNode(id));
   g.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jumpToNode(id); } });
@@ -480,6 +491,30 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ---------- theatrical low-level readouts (illustrative pseudocode, not live telemetry) ---------- */
+function revealCode(id) {
+  const n = N[id], codeEl = codeEls[id];
+  if (!codeEl || !n.code) return;
+  clearInterval(typers[id]);
+  codeEl.style.opacity = 1;
+  let i = 0;
+  if (reduce) { codeEl.textContent = n.code; return; }
+  typers[id] = setInterval(() => {
+    i++;
+    codeEl.textContent = n.code.slice(0, i);
+    const cursor = el('tspan', { class: 'cursor' }, codeEl);
+    cursor.textContent = '▍';
+    if (i >= n.code.length) clearInterval(typers[id]);
+  }, 16);
+}
+function clearCode(id) {
+  clearInterval(typers[id]);
+  const codeEl = codeEls[id];
+  if (!codeEl) return;
+  codeEl.style.opacity = 0;
+  codeEl.textContent = '';
+}
+
 function flyTo(target, ret, dur = 1300, done = null) {
   const from = { ...cam }, rFrom = { ...reticle };
   if (reduce) dur = 1;
@@ -510,10 +545,13 @@ function setChapter(i, instant = false) {
 
   const applyFocus = () => {
     for (const id in nodeEls) {
-      const on = F.has(id);
-      nodeEls[id].classList.toggle('on', on && !all);
-      nodeEls[id].classList.toggle('dim', !on);
-      mmNodes[id].classList.toggle('on', on && !all);
+      const on = F.has(id) && !all;
+      const wasOn = nodeEls[id].classList.contains('on');
+      nodeEls[id].classList.toggle('on', on);
+      nodeEls[id].classList.toggle('dim', !F.has(id));
+      mmNodes[id].classList.toggle('on', on);
+      if (on && !wasOn) revealCode(id);
+      else if (!on && wasOn) clearCode(id);
     }
     frameEls.forEach((f) => {
       const hit = f.ids.filter((id) => F.has(id)).length;
