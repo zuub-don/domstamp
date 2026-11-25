@@ -9,6 +9,10 @@ TQ1 is an optional Node-only package for JSON-compatible snapshots and related d
 npm install @domstamp/tq1
 ```
 
+:::caution[Not yet published]
+This package is not on the npm registry yet; the command above will 404 until the first release ships. Check the [repository README](https://github.com/zuub-don/domstamp#release-path) for current status.
+:::
+
 ```ts
 import { encodeTq1, decodeTq1 } from '@domstamp/tq1';
 

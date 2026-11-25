@@ -7,6 +7,10 @@ description: Supported Playwright features, adapter settings, and low-level capt
 npm install domstamp @domstamp/playwright playwright-core
 ```
 
+:::caution[Not yet published]
+These packages are not on the npm registry yet; the command above will 404 until the first release ships. Check the [repository README](https://github.com/zuub-don/domstamp#release-path) for current status.
+:::
+
 ## Recommended API
 
 ```ts
