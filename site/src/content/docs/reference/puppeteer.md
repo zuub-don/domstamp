@@ -7,6 +7,10 @@ description: Install and use the Puppeteer adapter, with its exact capability bo
 npm install domstamp @domstamp/puppeteer puppeteer-core
 ```
 
+:::caution[Not yet published]
+These packages are not on the npm registry yet; the command above will 404 until the first release ships. Check the [repository README](https://github.com/zuub-don/domstamp#release-path) for current status.
+:::
+
 ```ts
 import { createDomstamp } from 'domstamp';
 import { puppeteerAdapter } from '@domstamp/puppeteer';

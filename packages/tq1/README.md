@@ -6,6 +6,8 @@ Lossless dictionary encoding with deterministic gzip transport for Domstamp snap
 npm install @domstamp/tq1
 ```
 
+> **Not yet published.** This package is not on the npm registry yet; the command above will 404 until the first release ships. See the [root README](../../README.md#release-path) for status.
+
 ```ts
 import { decodeTq1, encodeTq1 } from '@domstamp/tq1';
 

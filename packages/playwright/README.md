@@ -6,6 +6,8 @@ The optional Playwright adapter for `domstamp`. It works with `Page` objects fro
 npm install domstamp @domstamp/playwright playwright-core
 ```
 
+> **Not yet published.** These packages are not on the npm registry yet; the command above will 404 until the first release ships. See the [root README](../../README.md#release-path) for status.
+
 ```ts
 import { createDomstamp } from 'domstamp';
 import { playwrightAdapter } from '@domstamp/playwright';

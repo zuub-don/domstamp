@@ -11,6 +11,10 @@ Domstamp is ESM-only and requires Node.js 20 or later.
 npm install domstamp @domstamp/playwright playwright-core
 ```
 
+:::caution[Not yet published]
+These packages are not on the npm registry yet; the command above will 404 until the first release ships. Check the [repository README](https://github.com/zuub-don/domstamp#release-path) for current status.
+:::
+
 If your project already uses `@playwright/test` or `playwright`, its compatible `playwright-core` installation satisfies the peer dependency.
 
 ## Capture a page
@@ -76,6 +80,10 @@ Persistent mutation instability returns `UNSTABLE_CAPTURE` as a warning. Expecte
 ```bash
 npm install @domstamp/tq1
 ```
+
+:::caution[Not yet published]
+This package is not on the npm registry yet; the command above will 404 until the first release ships. Check the [repository README](https://github.com/zuub-don/domstamp#release-path) for current status.
+:::
 
 ```ts
 import { encodeTq1, decodeTq1 } from '@domstamp/tq1';

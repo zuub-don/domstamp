@@ -6,6 +6,8 @@ Framework-neutral browser-state snapshot orchestration for automation and AI age
 npm install domstamp
 ```
 
+> **Not yet published.** This package is not on the npm registry yet; the command above will 404 until the first release ships. See the [root README](../../README.md#release-path) for status.
+
 Domstamp does not know about React, Vue, Angular, Svelte, or any browser driver. It coordinates a typed adapter, validates its output, applies trusted structural redaction and plugins, enforces limits, and returns a versioned snapshot.
 
 ## Capture

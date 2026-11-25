@@ -6,6 +6,8 @@ Puppeteer adapter for the framework-neutral [`domstamp`](../domstamp) API.
 npm install domstamp @domstamp/puppeteer puppeteer-core
 ```
 
+> **Not yet published.** These packages are not on the npm registry yet; the command above will 404 until the first release ships. See the [root README](../../README.md#release-path) for status.
+
 ```ts
 import { createDomstamp } from 'domstamp';
 import { puppeteerAdapter } from '@domstamp/puppeteer';
